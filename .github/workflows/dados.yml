@@ -1,0 +1,24 @@
+name: Atualizar bases (MAPA)
+on:
+  schedule:
+    - cron: '23 22 5 * *'   # dia 5 de cada mês, 19h23 (Brasília)
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install --no-audit --no-fund ws@8
+      - name: Baixar e processar bases do MAPA
+        run: node scripts/update-data.mjs
+      - name: Publicar dados atualizados
+        run: |
+          git config user.name "robo-safrou"
+          git config user.email "robo@users.noreply.github.com"
+          git add docs/data
+          git diff --cached --quiet && echo "Nada mudou" || (git commit -m "Atualiza bases do MAPA ($(date +%Y-%m-%d))" && git push)
