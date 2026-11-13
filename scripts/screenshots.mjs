@@ -11,4 +11,29 @@ await pg.click('.card >> nth=0');await pg.waitForTimeout(500);await pg.fill('#d-
 await pg.click('#tab-fol');await pg.waitForTimeout(3000);await pg.click('.chip.fmodo[data-m="foliar"]');await pg.click('.chip.nut[data-n="B"]');await pg.click('.chip.nut[data-n="Zn"]');await shot('3-fertilizantes');
 await pg.click('#tab-cal');await pg.fill('#k-vel','12');await pg.waitForTimeout(300);await pg.fill('#k-esp','50');await pg.waitForTimeout(300);await pg.fill('#k-bico','0,8');await pg.waitForTimeout(400);await pg.click('#k-usar');await pg.fill('#k-tq','2000');await pg.waitForTimeout(300);await shot('4-calda');
 await pg.click('#tab-plan');await pg.waitForTimeout(5000);await pg.selectOption('#z-cult','Soja');await pg.waitForTimeout(300);await pg.selectOption('#z-uf','MT');await pg.waitForTimeout(300);await pg.fill('#z-mun','Sorriso');await pg.dispatchEvent('#z-mun','change');await pg.waitForTimeout(800);await pg.evaluate(()=>{document.querySelectorAll('details.zad').forEach(d=>d.open=false);const z=document.querySelector('.zleg')||document.querySelector('.zcard');if(z){z.scrollIntoView({block:'start'});window.scrollBy(0,-90)}});await shot('5-plantio');
+// ---- versões com frase de destaque (para a App Store) ----
+const font=(pkg,w)=>{const f=path.resolve('node_modules/@fontsource',pkg,'files',`${pkg}-latin-${w}-normal.woff2`);return fs.existsSync(f)?`url(data:font/woff2;base64,${fs.readFileSync(f).toString('base64')})`:'local("Arial")'};
+const css=`@font-face{font-family:Sora;font-weight:800;src:${font('sora',800)}}@font-face{font-family:Inter;font-weight:500;src:${font('inter',500)}}`;
+const DESTAQUES=[
+  ['1-defensivos','Mais de 4 mil defensivos na palma da mão','Dados oficiais do MAPA, funciona sem internet'],
+  ['2-ficha-custo','Saiba o custo por hectare antes de comprar','Compare genéricos pelo R$ por kg de ativo'],
+  ['3-fertilizantes','Ache o adubo certo em segundos','Filtre por nutriente, modo de aplicação e empresa'],
+  ['4-calda','Calibre o pulverizador e monte a calda','Volume por hectare, tanque e ordem de mistura'],
+  ['5-plantio','Plante na janela certa','ZARC por município, ciclo e tipo de solo'],
+];
+const pd=await b.newPage({viewport:{width:440,height:956},deviceScaleFactor:3});
+for(const [n,titulo,sub] of DESTAQUES){
+  const f=path.join(out,n+'.png');if(!fs.existsSync(f))continue;
+  const img=fs.readFileSync(f).toString('base64');
+  await pd.setContent(`<!doctype html><html><head><style>${css}
+  html,body{margin:0;width:440px;height:956px;overflow:hidden;background:#1E7A3E;font-family:Inter,sans-serif}
+  .top{padding:58px 34px 0;text-align:center}
+  .tag{display:inline-block;background:#F4B62A;color:#17251B;font:800 13px Sora,sans-serif;letter-spacing:-.02em;padding:6px 14px;border-radius:999px;margin-bottom:16px}
+  h1{margin:0;color:#fff;font:800 31px/1.12 Sora,sans-serif;letter-spacing:-.035em}
+  p{margin:12px 0 0;color:#D7F0DC;font:500 16px/1.35 Inter,sans-serif}
+  .phone{position:absolute;left:50%;top:240px;transform:translateX(-50%);width:330px;border:9px solid #17251B;border-radius:44px;overflow:hidden;background:#17251B;box-shadow:0 24px 50px rgba(0,0,0,.35)}
+  .phone img{display:block;width:100%;border-radius:35px}
+  </style></head><body><div class="top"><span class="tag">safrou!</span><h1>${titulo}</h1><p>${sub}</p></div><div class="phone"><img src="data:image/png;base64,${img}"></div></body></html>`);
+  await pd.waitForTimeout(300);await pd.screenshot({path:path.join(out,'destaque-'+n+'.png')});console.log('destaque',n);
+}
 await b.close();srv.close();
