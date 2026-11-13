@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif;-webkit-text-size-adjust:100%}img{max-width:100%}[hidden]{display:none!important}</style>
+<!--FONTS-->
+<script src="app-native.js"></script>
+</head><body>
+<title>Safrou</title>
+<style>
+/* Layout: app de uma coluna — cabeçalho fixo com busca, filtros em chips, lista de fichas, ficha do produto em painel sobreposto, faixa de anúncio no rodapé */
+:root{
+  --bg:#f4f7f2; --surface:#ffffff; --surface-2:#f4f7f2; --ink:#17251b; --muted:#4f6155; --line:#dce5da;
+  --accent:#1e7a3e; --accent-soft:#e3f2e6; --accent-ink:#ffffff; --hdr:#1e7a3e; --grain:#f4b62a;
+  --bio:#0d7368; --bio-soft:#d5efea;
+  --tox1:#c42b2b; --tox3:#c99300; --tox4:#1d58a6; --toxnc:#2c7a35;
+  --warn-soft:#fdf1d3; --warn-ink:#6b4800;
+  --f-display:"Sora",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1511; --surface:#18211b; --surface-2:#1d2820; --ink:#e6eee7; --muted:#9db0a2; --line:#2c3a30;
+  --accent:#5fbf7f; --accent-soft:#1f3a29; --accent-ink:#0b130e; --hdr:#14402a; --grain:#f4b62a;
+  --bio:#4fc7b8; --bio-soft:#123a35;
+  --tox1:#ff6b6b; --tox3:#f0c040; --tox4:#6aa2ff; --toxnc:#67c16f;
+  --warn-soft:#3a3018; --warn-ink:#f3d78a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1511; --surface:#18211b; --surface-2:#1d2820; --ink:#e6eee7; --muted:#9db0a2; --line:#2c3a30;
+  --accent:#5fbf7f; --accent-soft:#1f3a29; --accent-ink:#0b130e; --hdr:#14402a; --grain:#f4b62a;
+  --bio:#4fc7b8; --bio-soft:#123a35;
+  --tox1:#ff6b6b; --tox3:#f0c040; --tox4:#6aa2ff; --toxnc:#67c16f;
+  --warn-soft:#3a3018; --warn-ink:#f3d78a; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body);padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+header.top{position:relative;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{padding-block:12px 10px;display:grid;gap:10px}
+.brandrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{margin:0;font:700 26px/1 var(--f-display);letter-spacing:.01em;text-transform:uppercase}
+.brand h1 span{color:var(--accent)}
+.srcbadge{font-size:12.5px;color:var(--muted)}
+.tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:none;padding:5px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.search{position:relative}
+.search input{width:100%;padding:12px 14px 12px 42px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--surface-2);font-size:17px}
+.search input:focus{border-color:var(--accent);outline:none}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface);padding:5px 12px;border-radius:999px;font-size:14px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.filters .sel{display:flex;gap:8px;flex:1 1 100%;flex-wrap:wrap}
+.filters .sel label{flex:1 1 180px;min-width:0;display:grid;gap:2px;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.filters .sel input,.filters .sel select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:15px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)}
+
+main .wrap{padding-block:14px 24px;display:grid;gap:12px}
+.count{font-size:14px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.count b{color:var(--ink);font-variant-numeric:tabular-nums}
+.clear{border:0;background:none;color:var(--accent);font-weight:600;padding:0}
+.list{display:grid;gap:8px}
+.card{display:grid;grid-template-columns:6px 1fr;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);overflow:hidden;text-align:left;padding:0;width:100%}
+.card:hover{border-color:var(--accent)}
+.band{background:var(--muted)}
+.band.t1,.band.t2{background:var(--tox1)} .band.t3{background:var(--tox3)} .band.t4,.band.t5{background:var(--tox4)} .band.tnc{background:var(--toxnc)}
+.card .body{padding:10px 14px;display:grid;gap:4px;min-width:0}
+.card .l1{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.card .name{font:700 20px/1.1 var(--f-display);letter-spacing:.01em;overflow-wrap:anywhere}
+.card .ia{font-size:14.5px;color:var(--ink);overflow-wrap:anywhere}
+.card .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.reg{font:500 12px var(--f-mono);color:var(--muted);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pill.bio{background:var(--bio-soft);color:var(--bio)}
+.pill.org{background:transparent;border:1px solid var(--toxnc);color:var(--toxnc)}
+.more{justify-self:center;border:1px solid var(--line);background:var(--surface);padding:9px 20px;border-radius:999px;font-weight:600}
+
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:22px;display:grid;gap:10px}
+.empty h2{margin:0;font:700 22px/1.1 var(--f-display);text-transform:uppercase;text-wrap:balance}
+.empty p{margin:0;color:var(--muted);max-width:62ch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:8px;padding:10px 16px;font-weight:600;background:var(--accent);color:var(--accent-ink);text-decoration:none}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ficha */
+.sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+.sheet .bar{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);z-index:2}
+.sheet .bar .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.back{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:6px 12px;font-weight:600}
+.sheet .bar .t{font:700 18px/1.1 var(--f-display);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sheet .wrap.content{padding-block:16px 24px;display:grid;gap:14px}
+.hero{display:grid;gap:8px}
+.hero h2{margin:0;font:700 34px/1 var(--f-display);text-wrap:balance;overflow-wrap:anywhere}
+.hero .aka{font-size:14px;color:var(--muted)}
+.toxband{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;color:#fff;font-weight:600;font-size:14.5px}
+.toxband.t1,.toxband.t2{background:#c42b2b}.toxband.t3{background:#d9a400;color:#1a1400}.toxband.t4,.toxband.t5{background:#1d58a6}.toxband.tnc{background:#2c7a35}.toxband.tx{background:var(--muted)}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:10px;min-width:0}
+.box h3{margin:0;font:700 15px/1 var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.kv{display:grid;grid-template-columns:minmax(110px,32%) 1fr;gap:6px 14px;margin:0}
+.kv dt{color:var(--muted);font-size:14px}
+.kv dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.ialist{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.ialist li{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border-bottom:1px dashed var(--line);padding-bottom:6px}
+.ialist li:last-child{border:0;padding:0}
+.ialist .n{font-weight:600;overflow-wrap:anywhere;min-width:0}
+.ialist .n small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.ialist .c{font:500 14px var(--f-mono);white-space:nowrap}
+.cult{border-top:1px solid var(--line)}
+.cult:first-of-type{border-top:0}
+.cult summary{cursor:pointer;padding:9px 0;display:flex;justify-content:space-between;gap:10px;font-weight:600;list-style:none}
+.cult summary::-webkit-details-marker{display:none}
+.cult summary span{color:var(--muted);font-weight:500;font-size:13.5px;white-space:nowrap}
+.cult[open] summary{color:var(--accent)}
+.cult ul{margin:0 0 10px;padding:0;list-style:none;display:grid;gap:4px}
+.cult li{font-size:14.5px;display:grid}
+.cult li i{color:var(--muted);font-size:13px}
+.cult li.hit{background:var(--warn-soft);border-radius:6px;padding:2px 6px}
+.cfilter{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
+.gen{display:grid;gap:6px}
+.gen button{display:flex;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:8px 12px}
+.gen button b{font:700 17px/1.1 var(--f-display);overflow-wrap:anywhere;min-width:0}
+.gen button span{font-size:12.5px;color:var(--muted);text-align:right}
+.note{font-size:13.5px;color:var(--warn-ink);background:var(--warn-soft);border-radius:8px;padding:10px 12px}
+.muted{color:var(--muted);font-size:14px;margin:0}
+
+/* anúncio */
+.ad{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.ad .wrap{height:56px;display:flex;align-items:center;justify-content:center}
+.ad .slot{width:100%;max-width:468px;height:44px;border:1.5px dashed var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+
+/* admin */
+.admin{display:grid;gap:10px}
+.progress{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.adminlink{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:0}
+ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--ink)}
+.ffgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.ffgrid label,.flabel{display:grid;gap:3px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.ffgrid input,.ffgrid select,#folForm textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:15px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)}
+.gargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px;margin-top:4px}
+.gargrid label{display:grid;gap:2px;font:700 14px var(--f-display);color:var(--ink)}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.cgrid label{display:grid;gap:3px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.cgrid input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:16px;color:var(--ink);text-transform:none;letter-spacing:0;font-weight:400}
+.cgrid .gin input{border:0;background:none}
+.tablewrap{overflow-x:auto}
+.ctab{width:100%;border-collapse:collapse;font-size:14.5px;font-variant-numeric:tabular-nums}
+.ctab th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.ctab td{padding:7px 8px;border-bottom:1px dashed var(--line)}
+.ctab td:not(:first-child){white-space:nowrap}
+.calc{border-color:var(--accent)}
+.box>*{min-width:0}
+.cout{display:grid;gap:10px;min-width:0}
+.kpis{display:flex;gap:10px;flex-wrap:wrap}
+.kpis>div{flex:1 1 130px;background:var(--accent-soft);border-radius:8px;padding:8px 12px;display:grid;gap:2px}
+.kpis span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.kpis b{font:700 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.kpis small{color:var(--muted);font-size:12.5px}
+.gin.sm{min-width:110px}.gin.sm input{width:60px}
+.sm1{width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:15px}
+.kit td{vertical-align:middle}
+.pill.moa{background:var(--warn-soft);color:var(--warn-ink);font-family:var(--f-mono);font-size:11.5px}
+.ialist .n small .pill{margin-right:4px}
+.prog li{line-height:1.6}
+.kit td:first-child{min-width:140px}
+.xbtn{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:32px;height:32px;font-size:18px;line-height:1}
+.tabs{flex-wrap:nowrap}
+@media (max-width:520px){.tabs{width:100%}.tabs button{flex:1 1 0;padding:6px 4px;font-size:13.5px;text-align:center}}
+.star{margin-left:auto;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:6px 12px;font-weight:600;white-space:nowrap}
+.star[aria-pressed="true"]{background:var(--warn-soft);color:var(--warn-ink);border-color:transparent}
+.mcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;display:grid;gap:8px}
+.mcard.low{border-color:var(--tox1)}
+.mhead{display:flex;gap:10px;align-items:flex-start}
+.mopen{flex:1;min-width:0;border:0;background:none;padding:0;text-align:left;display:grid;gap:2px}
+.mopen b{font:700 19px/1.1 var(--f-display);overflow-wrap:anywhere}
+.mopen span{font-size:13.5px;color:var(--muted);overflow-wrap:anywhere}
+.mrow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.mrow label{display:grid;gap:3px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.mval{display:grid;gap:3px;margin-left:auto;text-align:right}
+.mval span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.mval b{font-variant-numeric:tabular-nums}
+.mlow{margin:0;color:var(--tox1);font-weight:600;font-size:14px}
+.refp{display:grid;gap:6px;border-top:1px dashed var(--line);padding-top:10px}
+.refline{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.refline span{flex:1 1 100%;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.refline b{font:700 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.refline small{color:var(--muted)}
+.sharerow{display:flex;gap:8px;flex-wrap:wrap}
+.sharerow select{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
+.mud summary{cursor:pointer}
+.mud h3{margin-top:6px}
+.kpis>.kwarn{background:var(--warn-soft)}
+.kpis>.kwarn b{color:var(--tox1)}
+.cgrid select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:16px;color:var(--ink);text-transform:none;letter-spacing:0;font-weight:400}
+.cgrid input:disabled{opacity:.6}
+.cgrid .gin select{width:auto;padding:0 4px;border:0;border-left:1px solid var(--line);border-radius:0;background:var(--surface);font-size:12px}
+.zleg{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px;font-weight:600}
+.zleg span{padding:2px 8px;border-radius:6px}
+.z2{background:#2e8b47;color:#fff}.z3{background:#e3b505;color:#231a00}.z4{background:#e0702a;color:#fff}.z9{background:var(--accent)}.z0{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.zcard{gap:8px}
+.zhead{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.zcal{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.zm{display:grid;gap:3px;text-align:center}
+.zm span{font-size:11px;color:var(--muted);font-weight:600}
+.zm div{display:grid;grid-template-rows:repeat(3,10px);gap:2px}
+.zm i{display:block;border-radius:2px;height:10px}
+.poscard{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:10px}
+.poscard td div{white-space:nowrap}
+.zad summary{cursor:pointer}
+.zad td,.zad th{white-space:normal}
+.zjan{margin:0;font-size:15px;line-height:1.6}
+@media (max-width:520px){.zm span{font-size:9.5px}}
+.semads{font-size:12.5px;padding:3px 10px;align-self:center;border-color:var(--accent);color:var(--accent);background:var(--surface)}
+.procard{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--r);padding:14px 16px;display:grid;gap:8px}
+.procard h3{margin:0;font:700 20px/1.1 var(--f-display);text-transform:uppercase;color:var(--accent)}
+.procard p{margin:0}
+.sug{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface-2)}
+.sug>div:first-child{min-width:0}
+.gin{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface-2)}
+.gin input{width:100%;min-width:0;border:0;background:none;padding:6px 8px;font:400 15px var(--f-body)}
+.gin select{border:0;border-left:1px solid var(--line);background:var(--surface);font-size:12px;padding:0 2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (min-width:700px){.filters .sel{flex:1 1 auto}header.top{position:sticky;top:env(safe-area-inset-top,0px)}}
+.chip.ft{margin-left:auto}
+/* ===== Safrou: identidade ===== */
+body{padding-bottom:calc(122px + env(safe-area-inset-bottom,0px))}
+body::before{background:var(--hdr)}
+header.top{background:var(--hdr);color:#fff;border-bottom:0;border-radius:0 0 24px 24px}
+header.top .wrap{padding-block:12px 16px}
+.brand{align-items:center;gap:8px}
+.brand h1{font:800 25px/1 var(--f-display);letter-spacing:-.045em;text-transform:none;color:#fff}
+.semads{background:var(--grain)!important;color:#17251b!important;border:0!important;font-weight:700;padding:6px 12px!important}
+.search input{background:#fff;color:#17251b;border-color:transparent;border-radius:14px}
+.search input:focus{border-color:var(--grain)}
+.search svg{color:#4f6155}
+header.top .chip{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff}
+header.top .chip[aria-pressed="true"]{background:#fff;color:#17251b;border-color:#fff}
+header.top .filters .sel label{color:#d7f0dc}
+header.top a{color:#fff}
+.srcbadge{color:#d7f0dc}
+.card{border-color:transparent;box-shadow:0 1px 2px rgba(23,37,27,.07)}
+.card .name,.sheet .bar .t,.empty h2{text-transform:none;letter-spacing:-.02em}
+.card .name{font-size:18px}
+.hero h2{letter-spacing:-.03em;font-weight:800}
+.box{border-color:transparent;box-shadow:0 1px 2px rgba(23,37,27,.07)}
+.box h3{font-family:var(--f-body);font-weight:700;letter-spacing:.06em;font-size:12.5px}
+.btn{border-radius:12px;min-height:44px}
+.sheet{padding-bottom:calc(130px + env(safe-area-inset-bottom,0px))}
+.ad{bottom:calc(64px + env(safe-area-inset-bottom,0px));padding-bottom:0;border-top:0;background:var(--bg)}
+.ad .wrap{height:58px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:31;display:flex;background:var(--surface);border-top:1px solid var(--line);padding:0 max(4px,env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px)}
+.tabbar button{flex:1 1 0;min-width:0;height:64px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.tabbar .ic{display:flex;padding:3px 16px;border-radius:999px}
+.tabbar button[aria-selected="true"]{color:var(--accent);font-weight:700}
+.tabbar button[aria-selected="true"] .ic{background:var(--accent-soft)}
+@media (min-width:700px){.tabbar{justify-content:center}.tabbar button{flex:0 1 120px}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brandrow">
+      <div class="brand"><svg class="logo" width="30" height="30" viewBox="0 0 180 180" aria-hidden="true"><rect width="180" height="180" rx="40" fill="#F4B62A"/><rect x="80" y="62" width="20" height="62" rx="10" fill="#17251B"/><path d="M90 70C70 67 56 54 53 32C75 32 90 47 90 70Z" fill="#1E7A3E"/><path d="M90 62C96 38 113 24 130 21C130 45 112 60 90 62Z" fill="#1E7A3E"/><circle cx="90" cy="148" r="14" fill="#17251B"/></svg><h1>safrou</h1></div><button class="chip semads" id="semAds" hidden>Sem anúncios</button>
+    </div>
+    <div id="searchArea" class="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Produto, ingrediente ativo, empresa ou nº de registro" autocomplete="off" aria-label="Buscar">
+    </div>
+    <div id="filterArea" class="filters">
+      <button class="chip" data-tipo="todos" aria-pressed="true">Todos</button>
+      <button class="chip" data-tipo="quim" aria-pressed="false">Químicos</button>
+      <button class="chip" data-tipo="bio" aria-pressed="false">Biológicos</button>
+      <button class="chip ft" id="ftBtn" aria-expanded="false">Filtros</button>
+      <div class="sel" id="selBox" hidden>
+        <label for="fGrupo">Classe
+          <select id="fGrupo">
+            <option value="">Todas</option>
+            <option>Herbicida</option><option>Fungicida</option><option>Inseticida</option><option>Acaricida</option><option>Nematicida</option><option>Bactericida</option><option>Regulador de Crescimento</option><option>Feromônio</option><option>Formicida</option><option>Cupinicida</option><option>Moluscicida</option>
+          </select>
+        </label>
+        <label for="fCult">Cultura
+          <input id="fCult" list="dlCult" placeholder="Ex.: Soja" autocomplete="off">
+          <datalist id="dlCult"></datalist>
+        </label>
+        <label for="fPraga">Praga / doença / planta daninha
+          <input id="fPraga" placeholder="Ex.: ferrugem, Helicoverpa, buva" autocomplete="off">
+        </label>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap" id="view"></div>
+</main>
+
+<div class="sheet" id="sheet" hidden></div>
+
+<div class="ad" aria-label="Espaço de anúncio">
+  <div class="wrap"><div class="slot" id="adSlot"></div></div>
+</div>
+
+<nav class="tabbar" role="tablist" aria-label="Seções">
+  <button role="tab" id="tab-def" aria-selected="true"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c-3 4-6 7.5-6 11a6 6 0 0 0 12 0c0-3.5-3-7-6-11z"/></svg></span>Defensivos</button>
+  <button role="tab" id="tab-fol" aria-selected="false"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 6-14 15-14 0 9-6 15-14 15"/><path d="M5 19l7-7"/></svg></span>Adubos</button>
+  <button role="tab" id="tab-cal" aria-selected="false"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 15h9"/></svg></span>Calda</button>
+  <button role="tab" id="tab-plan" aria-selected="false"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Plantio</button>
+  <button role="tab" id="tab-meus" aria-selected="false"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></span>Meus</button>
+</nav>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const MAPA_PAGE='https://dados.agricultura.gov.br/dataset/sistema-de-agrotoxicos-fitossanitarios-agrofit';
+const MAPA_CSV='https://dados.agricultura.gov.br/dataset/6c913699-e82e-4da3-a0a1-fb6c431e367f/resource/d30b30d7-e256-484e-9ab8-cd40974e1238/download/agrofitprodutosformulados.csv';
+const AGROFIT='https://agrofit.agricultura.gov.br/agrofit_cons/principal_agrofit_cons';
+
+let DB=null;          // base carregada
+let P=[];             // produtos enriquecidos
+let cultIdx=new Map();// nome normalizado da cultura -> id string
+let meta=null;        // {assetId, atualizadoEm, produtos}
+let tab='def';
+let shown=60;
+let assets=null, db=null, canAdmin=false;
+const F={q:'',tipo:'todos',grupo:'',cult:'',praga:''};
+
+/* ---------- cache local (offline) ---------- */
+const IDB={
+  open(){return new Promise((res,rej)=>{try{const r=indexedDB.open('bulanocampo',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},
+  async get(k){try{const d=await this.open();return await new Promise(res=>{const t=d.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>res(undefined)})}catch(e){return undefined}},
+  async set(k,v){try{const d=await this.open();await new Promise(res=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=res})}catch(e){}}
+};
+
+/* ---------- enriquecimento ---------- */
+const GRUPOS=['Herbicida','Fungicida','Inseticida','Acaricida','Nematicida','Bactericida','Regulador de Crescimento','Feromônio','Formicida','Cupinicida','Moluscicida'];
+function parseIA(s){
+  return String(s||'').split(/\s\+\s/).map(x=>x.trim()).filter(Boolean).map(x=>{
+    const paren=[...x.matchAll(/\(([^()]*)\)/g)].map(m=>m[1]);
+    const conc=paren.length?paren[paren.length-1]:'';
+    const isConc=/\d/.test(conc)&&/(g\/|%|UFC|mL|ml|kg|L\b|ppm|conidios|unid|cel|OB|PIB|propágulos)/i.test(conc);
+    const nome=x.replace(/\s*\(.*$/,'').trim();
+    const grupo=paren.slice(0,isConc?-1:undefined).join(' · ');
+    return {nome,grupo,conc:isConc?conc:''};
+  });
+}
+function toxOf(s){
+  const t=norm(s);let m=t.match(/categoria\s*(\d)/);
+  if(m)return {k:'t'+m[1],label:s.replace(/\s{2,}/g,' — ')};
+  if(t.includes('nao classificado'))return {k:'tnc',label:'Não classificado'};
+  if(t.startsWith('extremamente'))return {k:'t1',label:s+' (classificação antiga)'};
+  if(t.startsWith('altamente'))return {k:'t2',label:s+' (classificação antiga)'};
+  if(t.startsWith('medianamente'))return {k:'t3',label:s+' (classificação antiga)'};
+  if(t.startsWith('pouco toxico'))return {k:'t4',label:s+' (classificação antiga)'};
+  return {k:'tx',label:s||'Não informado'};
+}
+function enrich(d){
+  const S=d.S;
+  cultIdx=new Map();
+  P=d.P.map((p,i)=>{
+    const names=p.m.split(';').map(x=>x.trim()).filter(Boolean);
+    const classe=S[p.c]||'';
+    const ia=parseIA(p.ia);ia.forEach(x=>{x.moa=/biol/i.test(x.grupo)?null:moaOf(x.grupo,x.nome)});
+    const bio=/microbiol|biol[oó]gic|ferom[oô]n|semioqu[ií]m/i.test(classe)||/\(biol[oó]gico\)/i.test(p.ia);
+    const grupos=GRUPOS.filter(g=>norm(classe).includes(norm(g).slice(0,8)));
+    const iaKey=ia.map(x=>norm(x.nome)).sort().join('+');
+    const compKey=ia.map(x=>norm(x.nome)+'@'+norm(x.conc).replace(/\s/g,'')).sort().join('+');
+    p.u.forEach(([c])=>{const n=S[c];if(!cultIdx.has(norm(n)))cultIdx.set(norm(n),c)});
+    return {i,raw:p,reg:p.r,nome:names[0]||p.m,aka:names.slice(1),classe,ia,bio,grupos,
+      form:S[p.f]||'',tit:S[p.t]||'',modo:S[p.mo]||'',tox:toxOf(S[p.tx]||''),amb:S[p.am]||'',org:S[p.o]||'',
+      iaKey,compKey,key:norm([p.m,p.ia,S[p.t],p.r].join(' ')),cults:new Set(p.u.map(u=>u[0]))};
+  }).sort((a,b)=>a.nome.localeCompare(b.nome,'pt'));
+  const dl=$('#dlCult');
+  dl.innerHTML=[...cultIdx.keys()].map(k=>S[cultIdx.get(k)]).sort((a,b)=>a.localeCompare(b,'pt')).map(n=>`<option value="${esc(n)}">`).join('');
+}
+
+/* ---------- filtro ---------- */
+function prayIds(q){
+  const n=norm(q).trim();if(n.length<3)return null;
+  const S=DB.S;const set=new Set();
+  DB.PR.forEach(([a,b],i)=>{if(norm(S[a]).includes(n)||norm(S[b]).includes(n))set.add(i)});
+  return set;
+}
+function filtered(){
+  const terms=norm(F.q).split(/\s+/).filter(Boolean);
+  const cId=F.cult?cultIdx.get(norm(F.cult).trim()):undefined;
+  const cultOn=!!F.cult.trim();
+  const pr=prayIds(F.praga);
+  return P.filter(p=>{
+    if(F.tipo==='bio'&&!p.bio)return false;
+    if(F.tipo==='quim'&&p.bio)return false;
+    if(F.grupo&&!p.grupos.includes(F.grupo))return false;
+    if(terms.length&&!terms.every(t=>p.key.includes(t)))return false;
+    if(cultOn){
+      if(cId===undefined)return false;
+      if(!p.cults.has(cId)&&!p.cults.has(cultIdx.get('todas as culturas')))return false;
+    }
+    if(pr){
+      const ok=p.raw.u.some(([c,ps])=>(!cultOn||c===cId||DB.S[c]==='Todas as culturas')&&ps.some(x=>pr.has(x)));
+      if(!ok)return false;
+    }
+    return true;
+  });
+}
+
+/* ---------- telas ---------- */
+const fmtN=n=>n.toLocaleString('pt-BR');
+const fmtD=iso=>{try{return new Date(iso).toLocaleDateString('pt-BR')}catch(e){return iso}};
+function card(p){
+  const ia=p.ia.map(x=>x.nome+(x.conc?` ${x.conc}`:'')).join(' + ');
+  return `<button class="card" data-i="${p.i}"><span class="band ${p.tox.k}" aria-hidden="true"></span><span class="body">
+    <span class="l1"><span class="name">${esc(p.nome)}</span><span class="reg">Reg. ${esc(p.reg)}</span></span>
+    <span class="ia">${esc(ia)}</span>
+    <span class="meta">${p.bio?'<span class="pill bio">Biológico</span>':''}<span class="pill">${esc(p.classe)}</span>${p.org==='SIM'?'<span class="pill org">Uso em orgânicos</span>':''}<span>${esc(p.tit)}</span></span>
+  </span></button>`;
+}
+function renderDef(){
+  const v=$('#view');ftLabel();
+  if(!DB){v.innerHTML=emptyState();bindAdmin();return}
+  const list=filtered();
+  const active=F.q||F.tipo!=='todos'||F.grupo||F.cult||F.praga;
+  const mu=meta&&meta.mudancas;
+  v.innerHTML=`${mu&&(mu.nNovos||mu.nRemovidos)&&!active?`<details class="box mud"><summary><b>Atualização da base de ${fmtD(meta.atualizadoEm)}:</b> ${fmtN(mu.nNovos)} novo${mu.nNovos===1?'':'s'} registro${mu.nNovos===1?'':'s'} · ${fmtN(mu.nRemovidos)} saíram da lista</summary>${mu.novos.length?`<h3>Novos registros</h3><div class="gen">${mu.novos.map(([r,n])=>{const p=P.find(x=>x.reg===r);return p?`<button data-i="${p.i}" class="mudopen"><b>${esc(n)}</b><span>Reg. ${esc(r)}</span></button>`:''}).join('')}</div>`:''}${mu.removidos.length?`<h3>Saíram da base (registro cancelado ou suspenso)</h3><ul class="steps">${mu.removidos.map(([r,n])=>`<li>${esc(n)} <span class="muted">Reg. ${esc(r)}</span></li>`).join('')}</ul>`:''}</details>`:''}<div class="count"><span><b>${fmtN(list.length)}</b> de ${fmtN(P.length)} produtos registrados</span>${active?'<button class="clear" id="clr">Limpar filtros</button>':''}</div>
+    <div class="list">${list.slice(0,shown).map(card).join('')}</div>
+    ${list.length>shown?`<button class="more" id="more">Mostrar mais ${fmtN(Math.min(60,list.length-shown))}</button>`:''}
+    ${list.length===0?'<div class="empty"><h2>Nada encontrado</h2><p>Tente outro nome ou ingrediente ativo, ou tire algum filtro. Para pragas e culturas, digite pelo menos 3 letras.</p></div>':''}
+    ${footer()}`;
+  $('#more')?.addEventListener('click',()=>{shown+=60;renderDef()});
+  v.querySelectorAll('.mudopen').forEach(b=>b.onclick=()=>openProduct(+b.dataset.i));
+  $('#clr')?.addEventListener('click',()=>{Object.assign(F,{q:'',tipo:'todos',grupo:'',cult:'',praga:''});syncInputs();shown=60;renderDef()});
+  bindAdmin();
+}
+function footer(){
+  return `<p class="muted">Fonte: AGROFIT/MAPA — dados abertos${meta?.atualizadoEm?`, base de ${fmtD(meta.atualizadoEm)}`:''}. Consulta de apoio: siga sempre a bula e o receituário agronômico.</p>
+  ${canAdmin?adminBox():''}`;
+}
+function emptyState(){
+  return `<div class="empty"><h2>A base de produtos ainda não foi carregada</h2>
+  <p>O app usa o cadastro oficial do AGROFIT (Ministério da Agricultura), com cerca de 4.400 produtos formulados — químicos e biológicos — e todas as culturas e alvos registrados.</p>
+  ${canAdmin?'<p>Como você administra o app, carregue a base pelo painel abaixo. Depois disso ela fica disponível para todo mundo que abrir o link e funciona sem internet.</p>':'<p>Carregando a base de produtos… Na primeira vez pode levar alguns segundos; depois ela fica salva neste aparelho para uso offline.</p>'}
+  </div>${canAdmin?adminBox():''}`;
+}
+function adminBox(){
+  return `<div class="box admin" id="adminBox"><h3>Atualizar base (administrador)</h3>
+    <ol class="steps">
+      <li>Baixe o arquivo <b>Produto Formulado (.csv)</b> do MAPA: <a href="${MAPA_CSV}" target="_blank" rel="noopener">download direto</a> (cerca de 400 MB) ou pela <a href="${MAPA_PAGE}" target="_blank" rel="noopener">página do conjunto de dados</a>.</li>
+      <li>Selecione o arquivo aqui. Ele é processado no seu navegador e vira uma base compacta de uns 2 MB.</li>
+      <li>Toque em publicar. Todo mundo que usa o app recebe a base nova.</li>
+    </ol>
+    <input type="file" id="csvFile" accept=".csv,text/csv">
+    <div class="progress" hidden id="prog"><i></i></div>
+    <p class="muted" id="adminMsg">${meta?.atualizadoEm?`Base atual: ${fmtN(meta.produtos)} produtos, carregada em ${fmtD(meta.atualizadoEm)}.`:'Nenhuma base publicada ainda.'}</p>
+    <div class="btnrow"><button class="btn" id="pubBtn" hidden>Publicar base</button></div>
+  </div>`;
+}
+/* ---------- foliares (catálogo próprio, salvo no banco do app) ---------- */
+const NUTR=['N','P2O5','K2O','Ca','Mg','S','B','Zn','Mn','Cu','Fe','Mo','Co','Ni','Si','COT'];
+const TIPOS_FOL=['Granulado de solo','Foliar','Fertilizante especial','Fluido de solo','Organomineral','Bioestimulante','Corretivo','Inoculante','Adjuvante','Outro'];
+let sampleFn=null,imgLim=null,SUG=[],sugUnsub=null;
+const ROTULO_PROMPT=`As imagens são fotos do rótulo ou da ficha técnica de um fertilizante, foliar, corretivo ou bioestimulante vendido no Brasil. Leia SOMENTE o que está impresso; não complete nada de memória.
+Responda só com um objeto JSON neste formato:
+{"nome":"nome comercial","empresa":"fabricante ou registrante","registro":"número de registro MAPA como impresso, ou vazio","tipo":"um de: ${TIPOS_FOL.join(', ')}","natureza":"natureza física (ex.: Sólido granulado, Fluido em solução, Fluido em suspensão, Pó)","garantias":[{"n":"código","v":"número com ponto decimal","u":"% ou g/L"}],"indicacao":"culturas, doses e modo de uso como impresso, resumido","legivel":true}
+Códigos de garantia permitidos: ${NUTR.join(', ')} (P2O5 e K2O como no rótulo; COT = carbono orgânico total). Se o rótulo der % (m/m) e g/L, use %. Omita garantias que não aparecem. Se a imagem não for um rótulo de fertilizante ou estiver ilegível, devolva {"legivel":false}.`;
+let FOL=[];let folLoaded=false;let folUnsub=null;
+const FF={q:'',nut:new Set(),tipo:''};
+let folEdit=null; // doc em edição
+function folMatch(p){
+  if(FF.tipo&&p.tipo!==FF.tipo)return false;
+  for(const n of FF.nut){if(!(p.garantias||[]).some(g=>g.n===n&&parseFloat(String(g.v).replace(',','.'))>0))return false}
+  const t=norm(FF.q).split(/\s+/).filter(Boolean);
+  if(t.length){const k=norm([p.nome,p.empresa,p.registro,p.tipo,p.indicacao,(p.garantias||[]).map(g=>g.n).join(' ')].join(' '));if(!t.every(x=>k.includes(x)))return false}
+  return true;
+}
+const garTxt=p=>(p.garantias||[]).map(g=>`${g.n} ${g.v}${g.u||''}`).join(' · ');
+/* ---------- calculadora de custo (defensivos) ---------- */
+function iaConc(x){const m=String(x.conc||'').replace(/\s/g,'').match(/^([\d.,]+)g\/(L|kg)$/i);return m?{v:pnum(m[1]),u:m[2].toLowerCase()==='l'?'L':'kg'}:null}
+function calcDefBox(p){
+  let saved={};try{saved=JSON.parse(localStorage.getItem('calcd2:'+p.reg)||'{}')}catch(e){}
+  const c0=p.ia.map(iaConc).find(Boolean);
+  const un=saved.un||(c0?c0.u:(/p[oó]|gr[aâ]nul|WG|WP|SP/i.test(p.form)?'kg':'L'));
+  return `<div class="box calc calcd"><h3>Custo da aplicação</h3>
+    <p class="muted" style="margin:0">Digite o preço por litro (ou kg) e a dose que você vai usar (a dose está na bula e no receituário). O app calcula o custo por hectare e quanto você paga por kg de ingrediente ativo, que é a forma justa de comparar produtos da mesma composição.</p>
+    <div class="cgrid">
+      <label for="d-preco"><span>Preço (R$ por <span class="d-u">${un}</span>)</span><span class="gin"><input id="d-preco" inputmode="decimal" placeholder="Ex.: 76,00" value="${esc(saved.preco||'')}"><select id="d-un" aria-label="Unidade"><option ${un==='L'?'selected':''}>L</option><option ${un==='kg'?'selected':''}>kg</option></select></span></label>
+      <label for="d-dose"><span>Dose (<span class="d-u">${un}</span>/ha)</span><input id="d-dose" inputmode="decimal" placeholder="Ex.: 0,5" value="${esc(saved.dose||'')}"></label>
+      <label for="d-area">Área (ha, opcional)<input id="d-area" inputmode="decimal" placeholder="Ex.: 120" value="${esc(saved.area||'')}"></label>
+    </div>
+    <div class="cout" aria-live="polite"></div></div>`;
+}
+function bindCalcDef(p){
+  const box=document.querySelector('.calcd');if(!box)return;const q=id=>box.querySelector('#'+id);
+  const upd=()=>{
+    const pu=pnum(q('d-preco').value),un=q('d-un').value,dose=pnum(q('d-dose').value),area=pnum(q('d-area').value);
+    box.querySelectorAll('.d-u').forEach(e=>e.textContent=un);
+    try{localStorage.setItem('calcd2:'+p.reg,JSON.stringify({preco:q('d-preco').value,un,dose:q('d-dose').value,area:q('d-area').value}))}catch(e){}
+    const out=box.querySelector('.cout');
+    if(!(pu>0)){out.innerHTML='<p class="muted" style="margin:0">Preencha o preço por '+un+'.</p>';return}
+    const ias=p.ia.map(x=>({x,c:iaConc(x)})).filter(o=>o.c&&o.c.u===un&&o.c.v>0);
+    const rows=ias.map(({x,c})=>({nome:x.nome,conc:x.conc,custo:pu/(c.v/1000),gha:dose>0?c.v*dose:NaN}));
+    out.innerHTML=`${dose>0?`<div class="kpis"><div><span>Custo por hectare</span><b>${brl(pu*dose)}</b></div>
+      ${area>0?`<div><span>${n2(area,1)} ha</span><b>${brl(pu*dose*area)}</b><small>${n2(dose*area,1)} ${un} no total</small></div>`:''}</div>`:''}
+      ${rows.length?`<div class="tablewrap"><table class="ctab"><thead><tr><th>Ingrediente ativo</th><th>R$ por kg de i.a.</th>${dose>0?'<th>i.a. por ha</th>':''}</tr></thead><tbody>
+        ${rows.map(r=>`<tr><td><b>${esc(r.nome)}</b> <span class="muted">${esc(r.conc)}</span></td><td><b>${brl(r.custo)}</b></td>${dose>0?`<td>${n2(r.gha,1)} g/ha</td>`:''}</tr>`).join('')}</tbody></table></div>
+        <p class="muted" style="margin:0">Para comparar genéricos, abra os produtos de “Mesma composição” e veja o R$ por kg de i.a. de cada um.${rows.length>1?' Em misturas, o custo de cada ativo considera o preço inteiro do produto.':''}</p>`
+      :`<p class="muted" style="margin:0">${p.ia.some(x=>iaConc(x))?'A concentração deste produto é em '+(p.ia.map(iaConc).find(Boolean).u==='L'?'g/L':'g/kg')+'; ajuste a unidade do preço para ver o custo por kg de ingrediente ativo.':'Custo por ingrediente ativo não se aplica a este produto (concentração em unidades biológicas ou não informada).'}</p>`}`;
+  };
+  const draw=bindRef(box,'d:'+p.reg,()=>({un:q('d-un').value,preco:pnum(q('d-preco').value)}));const upd2=()=>{upd();draw()};
+  box.querySelectorAll('input').forEach(el=>el.addEventListener('input',upd2));q('d-un').addEventListener('change',upd2);upd2();
+}
+/* ---------- calculadora de custo por nutriente ---------- */
+const brl=n=>isFinite(n)?n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'—';
+const n2=(n,d=2)=>isFinite(n)?n.toLocaleString('pt-BR',{maximumFractionDigits:d}):'—';
+const pnum=s=>{s=String(s??'').trim();if(!s)return NaN;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return parseFloat(s)};
+const usable=gars=>gars.filter(g=>g.code&&g.code!=='COT'&&isFinite(g.v)&&g.v>0&&(g.u==='%'||g.u==='g/L'));
+function calcBox(key,gars,fluido,densReg){
+  if(!usable(gars).length)return '';
+  let saved={};try{saved=JSON.parse(localStorage.getItem('calc2:'+key)||'{}')}catch(e){}
+  const un=saved.un||(fluido?'L':'kg');
+  return `<div class="box calc calcf" data-key="${esc(key)}"><h3>Custo por nutriente</h3>
+    <p class="muted" style="margin:0">Digite o preço por litro (ou kg) que você pagou ou recebeu de cotação. O app calcula quanto custa cada kg de nutriente, para comparar produtos de igual para igual.</p>
+    <div class="cgrid">
+      <label for="c-preco"><span>Preço (R$ por <span class="c-u">${un}</span>)</span><span class="gin"><input id="c-preco" inputmode="decimal" placeholder="Ex.: 22,50" value="${esc(saved.preco||'')}"><select id="c-un" aria-label="Unidade"><option ${un==='L'?'selected':''}>L</option><option ${un==='kg'?'selected':''}>kg</option></select></span></label>
+      <label for="c-dens" class="c-dens">Densidade (kg/L)<input id="c-dens" inputmode="decimal" value="${esc(saved.dens||(densReg?String(densReg).replace('.',','):''))}" placeholder="Ex.: 1,35"></label>
+      <label for="c-dose"><span>Dose (<span class="c-u">${un}</span>/ha, opcional)</span><input id="c-dose" inputmode="decimal" placeholder="Ex.: 2" value="${esc(saved.dose||'')}"></label>
+    </div>
+    <div class="cout" aria-live="polite"></div>
+  </div>`;
+}
+function bindCalc(gars){
+  const box=document.querySelector('.calcf');if(!box)return;
+  const use=usable(gars);const q=id=>box.querySelector('#'+id);
+  const upd=()=>{
+    const preco=pnum(q('c-preco').value),un=q('c-un').value,dens=pnum(q('c-dens').value),dose=pnum(q('c-dose').value);
+    box.querySelectorAll('.c-u').forEach(e=>e.textContent=un);
+    try{localStorage.setItem('calc2:'+box.dataset.key,JSON.stringify({preco:q('c-preco').value,un,dens:q('c-dens').value,dose:q('c-dose').value}))}catch(e){}
+    const hasPct=use.some(g=>g.u==='%'),hasGL=use.some(g=>g.u==='g/L');
+    const needDens=(un==='L'&&hasPct)||(un==='kg'&&hasGL);
+    box.querySelector('.c-dens').hidden=!needDens;
+    const out=box.querySelector('.cout');
+    if(!(preco>0)){out.innerHTML='<p class="muted" style="margin:0">Preencha o preço por '+un+'.</p>';return}
+    if(needDens&&!(dens>0)){out.innerHTML=`<p class="note">Este produto tem garantia em ${hasPct&&un==='L'?'% (peso)':'g/L'} e o preço está por ${un}. Informe a densidade (está no rótulo ou na ficha técnica, em g/mL ou kg/L) para converter.</p>`;return}
+    // 1 unidade de produto (1 L ou 1 kg)
+    const massa=un==='kg'?1:(dens||0), vol=un==='L'?1:1/(dens||1);
+    const rows=use.map(g=>{const kgNut=g.u==='%'?massa*g.v/100:vol*g.v/1000;return {g,gPorUn:kgNut*1000,custo:preco/kgNut,gha:dose>0?kgNut*dose*1000:NaN}});
+    out.innerHTML=`${dose>0?`<div class="kpis"><div><span>Custo por hectare</span><b>${brl(preco*dose)}</b></div></div>`:''}
+    <div class="tablewrap"><table class="ctab"><thead><tr><th>Nutriente</th><th>Por ${un}</th><th>R$ por kg do nutriente</th>${dose>0?'<th>Entrega por ha</th>':''}</tr></thead><tbody>
+      ${rows.map(r=>`<tr><td><b>${esc(r.g.code)}</b> <span class="muted">${esc(String(r.g.v).replace('.',','))} ${esc(r.g.u)}</span></td><td>${n2(r.gPorUn,1)} g</td><td><b>${brl(r.custo)}</b></td>${dose>0?`<td>${n2(r.gha,1)} g/ha</td>`:''}</tr>`).join('')}
+    </tbody></table></div>
+    <p class="muted" style="margin:0">O custo de cada nutriente considera o preço inteiro do produto; em produtos com vários nutrientes, compare pelo nutriente principal que você precisa.</p>`;
+  };
+  const draw=bindRef(box,box.dataset.key,()=>({un:q('c-un').value,preco:pnum(q('c-preco').value)}));const upd2=()=>{upd();draw()};
+  box.querySelectorAll('input').forEach(el=>el.addEventListener('input',upd2));
+  q('c-un').addEventListener('change',upd2);
+  upd2();
+}
+
+/* ---------- base oficial SIPEAGRO (fertilizantes registrados) ---------- */
+let FERT=null,FP=[],fmeta=null,fshown=40;
+const MODOS=[['','Todos'],['foliar','Foliar'],['solo','Solo'],['fertirriga','Fertirrigação'],['semente','Semente'],['hidrop','Hidroponia']];
+FF.modo='';
+function garCode(name){
+  const n=norm(name).trim();
+  if(n.startsWith('carbono organico'))return 'COT';
+  if(n.startsWith('p2o5'))return 'P2O5';if(n.startsWith('k2o'))return 'K2O';
+  if(/^cao\b/.test(n))return 'Ca';if(/^mgo\b/.test(n))return 'Mg';
+  const m=n.match(/^(n|ca|mg|s|b|zn|mn|cu|fe|mo|co|ni|si|se)\b/);
+  if(m){const c=m[1];return c==='se'?'Se':c.length===1?c.toUpperCase():c[0].toUpperCase()+c[1]}
+  return null;
+}
+const fnum=v=>parseFloat(String(v).replace(/\./g,'').replace(',','.'))||parseFloat(String(v).replace(',','.'))||0;
+function enrichFert(d){
+  const S=d.S;
+  FP=d.P.map((p,i)=>{
+    const [reg,e,n,tipos,f,modos,c,dt,gar]=p;
+    const g=gar.map(([gi,v,ui])=>({nome:S[gi],code:garCode(S[gi]),v,u:S[ui]}));
+    const nut=new Set(g.filter(x=>x.code&&fnum(x.v)>0).map(x=>x.code));
+    const main=g.filter(x=>x.code&&x.code!=='COT'||x.code==='COT').filter(x=>x.code).sort((a,b)=>NUTR.indexOf(a.code)-NUTR.indexOf(b.code));
+    const modoTxt=modos.map(m=>S[m]).filter(Boolean);
+    return {i,reg,emp:S[e],nome:S[n],tipos:tipos.map(t=>S[t]).filter(Boolean),nat:S[f],modos:modoTxt,cls:S[c],dt,g,nut,
+      resumo:main.map(x=>`${x.code} ${x.v}${x.u==='%'?'%':' '+x.u}`).join(' · '),
+      gkey:g.map(x=>x.nome+'='+x.v+x.u).sort().join('|'),
+      mkey:norm(modoTxt.join(' ')),
+      key:norm([reg,S[e],S[n],tipos.map(t=>S[t]).join(' '),S[c]].join(' '))};
+  });
+}
+function fertFiltered(){
+  const t=norm(FF.q).split(/\s+/).filter(Boolean);
+  return FP.filter(p=>{
+    if(FF.modo&&!p.mkey.includes(FF.modo))return false;
+    for(const n of FF.nut)if(!p.nut.has(n))return false;
+    if(t.length&&!t.every(x=>p.key.includes(x)))return false;
+    return true;
+  });
+}
+function fertCard(p){
+  return `<button class="card fertcard" data-fi="${p.i}"><span class="band" style="background:var(--accent)" aria-hidden="true"></span><span class="body">
+    <span class="l1"><span class="name" style="font-size:18px">${esc(p.resumo||'Sem garantias informadas')}</span><span class="reg">Reg. ${esc(p.reg)}</span></span>
+    <span class="ia">${esc(p.nome)}${p.tipos.length?' · '+esc(p.tipos.join(', ').toLowerCase()):''}</span>
+    <span class="meta">${p.modos.map(m=>`<span class="pill">${esc(m.replace(/^VIA /,'').toLowerCase())}</span>`).join('')}<span>${esc(p.emp)}</span></span></span></button>`;
+}
+function openFert(i){
+  const p=FP[i];if(!p)return;
+  const same=FP.filter(x=>x!==p&&x.gkey===p.gkey&&p.g.length);
+  const cg=p.g.map(x=>({code:x.code,v:fnum(x.v),u:x.u}));const fluido=/FLUID|LIQUID/i.test(p.nat);const dg=p.g.find(x=>/densidade/i.test(x.nome));const dens=dg&&/kg\/(l|dm)|g\/(ml|cm)/i.test(dg.u)?fnum(dg.v):'';
+  const sh=$('#sheet');
+  sh.innerHTML=`<div class="bar"><div class="wrap"><button class="back" id="back">← Voltar</button><span class="t">Reg. ${esc(p.reg)}</span></div></div>
+  <div class="wrap content">
+    <div class="hero"><div style="display:flex;gap:6px;flex-wrap:wrap">${p.modos.map(m=>`<span class="pill">${esc(m)}</span>`).join('')}</div>
+      <h2 style="font-size:28px">${esc(p.resumo||p.nome)}</h2><div class="aka">${esc(p.emp)}</div></div>
+    <div class="box"><h3>Garantias registradas</h3>
+      ${p.g.length?`<ul class="ialist">${p.g.map(x=>`<li><span class="n">${esc(x.nome)}</span><span class="c">${esc(x.v)} ${esc(x.u)}</span></li>`).join('')}</ul>`:'<p class="muted">Sem garantias no registro.</p>'}</div>
+    ${calcBox('f:'+p.reg,cg,fluido,dens)}
+    <div class="box"><h3>Registro</h3><dl class="kv">
+      <dt>Nº registro MAPA</dt><dd style="font-family:var(--f-mono)">${esc(p.reg)}</dd>
+      <dt>Empresa</dt><dd>${esc(p.emp)}</dd>
+      <dt>Denominação</dt><dd>${esc(p.nome)}</dd>
+      ${p.tipos.length?`<dt>Tipo</dt><dd>${esc(p.tipos.join(', '))}</dd>`:''}
+      ${p.nat?`<dt>Natureza física</dt><dd>${esc(p.nat)}</dd>`:''}
+      ${p.cls?`<dt>Classificação</dt><dd>${esc(p.cls)}</dd>`:''}
+      ${p.dt?`<dt>Registrado em</dt><dd>${esc(p.dt)}</dd>`:''}</dl>
+      <div class="btnrow"><a class="btn ghost" href="https://www.google.com/search?q=${encodeURIComponent(p.emp+' fertilizante '+(p.resumo||''))}" target="_blank" rel="noopener">Buscar nome comercial</a></div>
+      <p class="note">O registro do MAPA não traz o nome comercial do rótulo. Se você tem o produto, cadastre pela foto do rótulo na aba Fertilizantes para ele aparecer com o nome.</p></div>
+    <div class="box"><h3>Mesmas garantias, outras empresas · ${same.length}</h3>
+      ${same.length?`<div class="gen">${same.slice(0,40).map(x=>`<button data-fi="${x.i}"><b>${esc(x.emp)}</b><span>Reg. ${esc(x.reg)}</span></button>`).join('')}</div>${same.length>40?`<p class="muted">Mostrando 40 de ${fmtN(same.length)}.</p>`:''}`:'<p class="muted">Nenhum outro produto registrado com exatamente as mesmas garantias.</p>'}</div>
+  </div>`;
+  sh.hidden=false;sh.scrollTop=0;document.body.style.overflow='hidden';
+  $('#back').onclick=closeSheet;
+  sh.querySelectorAll('.gen button[data-fi]').forEach(b=>b.onclick=()=>openFert(+b.dataset.fi));
+  bindCalc(cg);addStar('f:'+p.reg,p.resumo||p.nome,p.emp+' · Reg. '+p.reg);
+}
+function fertAdminBox(){
+  return `<div class="box admin"><h3>Base oficial de fertilizantes (administrador)</h3>
+    <p class="muted" style="margin:0">${fmeta?`Base atual: ${fmtN(fmeta.produtos)} produtos registrados, carregada em ${fmtD(fmeta.atualizadoEm)}.`:'Nenhuma base carregada ainda.'} Selecione o arquivo <b>sipeagro_fertilizantes</b> que o Claude gerou do painel do MAPA.</p>
+    <input type="file" id="fertFile"><p class="muted" id="fertMsg"></p></div>`;
+}
+function bindFertAdmin(){
+  const inp=$('#fertFile');if(!inp)return;
+  inp.onchange=async()=>{
+    const f=inp.files[0];if(!f)return;const msg=$('#fertMsg');msg.textContent='Lendo arquivo…';
+    try{
+      const buf=new Uint8Array(await f.arrayBuffer());
+      let text;
+      if(buf[0]===0x1f&&buf[1]===0x8b)text=await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      else text=new TextDecoder().decode(buf);
+      const d=JSON.parse(text);
+      if(!d||!Array.isArray(d.P)||!Array.isArray(d.S)||!/SIPEAGRO/.test(d.fonte||''))throw new Error('Este não é o arquivo da base de fertilizantes.');
+      msg.textContent=`${fmtN(d.P.length)} produtos. Enviando…`;
+      const up=await assets.upload(new Blob([text],{type:'application/json'}),{type:'application/json'});
+      const m={assetId:up.id,atualizadoEm:d.gerado,produtos:d.P.length,bytes:up.sizeBytes};
+      await db.doc('config/fert').set(m);
+      await IDB.set('fert',{assetId:up.id,data:d});
+      fmeta=m;FERT=d;enrichFert(d);renderFol();
+    }catch(err){msg.textContent='Não foi possível carregar: '+(err.code||err.message||err)}
+  };
+}
+async function loadFertStatic(){
+  try{const r=await fetch('data/fertilizantes.json');if(!r.ok)return;const d=await r.json();
+    if(!FERT||(d.gerado&&FERT.gerado&&d.gerado>FERT.gerado)){FERT=d;fmeta=fmeta||{atualizadoEm:d.gerado,produtos:d.P.length};enrichFert(FERT);await IDB.set('fert',{assetId:'static:'+d.gerado,data:FERT});if(tab==='fol')renderFol()}
+  }catch(e){console.warn(e)}
+}
+async function loadFert(){
+  const c=await IDB.get('fert');let cachedId=null;
+  if(c&&c.data){FERT=c.data;cachedId=c.assetId;fmeta=fmeta||{assetId:c.assetId,atualizadoEm:c.data.gerado,produtos:c.data.P.length};enrichFert(FERT);if(tab==='fol')renderFol()}
+  if(!db){await loadFertStatic();return}
+  try{
+    const snap=await db.doc('config/fert').get();
+    if(snap.exists){fmeta=snap.data();
+      if(fmeta.assetId&&fmeta.assetId!==cachedId){
+        if(tab==='fol'&&!FERT){const m=$('#fertLoading');if(m)m.hidden=false}
+        const r=await fetch('/_blob/'+fmeta.assetId);
+        if(r.ok){FERT=await r.json();enrichFert(FERT);await IDB.set('fert',{assetId:fmeta.assetId,data:FERT})}
+      }}
+  }catch(e){console.warn(e)}
+  if(!FERT)await loadFertStatic();
+  if(tab==='fol')renderFol();
+}
+function renderFol(){
+  const v=$('#view');
+  const t=norm(FF.q).split(/\s+/).filter(Boolean);
+  const list=FOL.filter(p=>{for(const n of FF.nut){if(!(p.garantias||[]).some(g=>g.n===n&&parseFloat(String(g.v).replace(',','.'))>0))return false}
+    if(FF.modo&&!norm(p.tipo+' '+(p.indicacao||'')).includes(FF.modo==='solo'?'solo':FF.modo))return false;
+    if(t.length){const k=norm([p.nome,p.empresa,p.registro,p.tipo,p.indicacao].join(' '));if(!t.every(x=>k.includes(x)))return false}return true})
+    .sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt'));
+  const fl=FERT?fertFiltered():[];
+  v.innerHTML=`
+  <div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="fq" type="search" placeholder="Empresa, nº de registro, tipo ou nome" autocomplete="off" aria-label="Buscar fertilizantes" value="${esc(FF.q)}"></div>
+  <div class="filters">${MODOS.map(([k,l])=>`<button class="chip fmodo" data-m="${k}" aria-pressed="${FF.modo===k}">${l}</button>`).join('')}</div>
+  <div class="filters"><span class="muted" style="font-size:13px">Precisa conter:</span>${NUTR.map(n=>`<button class="chip nut" data-n="${n}" aria-pressed="${FF.nut.has(n)}">${n}</button>`).join('')}</div>
+  ${list.length?`<div class="count"><span><b>${fmtN(list.length)}</b> com nome comercial (cadastrados no app)</span></div>
+     <div class="list">${list.map(p=>`<button class="card fcard" data-id="${esc(p._id)}"><span class="band" style="background:var(--bio)" aria-hidden="true"></span><span class="body">
+       <span class="l1"><span class="name">${esc(p.nome)}</span>${p.registro?`<span class="reg">Reg. ${esc(p.registro)}</span>`:''}</span>
+       <span class="ia">${esc(garTxt(p))}</span>
+       <span class="meta"><span class="pill bio">${esc(p.tipo||'Foliar')}</span><span>${esc(p.empresa||'')}</span></span></span></button>`).join('')}</div>`:''}
+  ${FERT?`<div class="count"><span><b>${fmtN(fl.length)}</b> de ${fmtN(FP.length)} produtos registrados no MAPA</span>${(FF.q||FF.modo||FF.nut.size)?'<button class="clear" id="fclr">Limpar filtros</button>':''}</div>
+     <div class="list">${fl.slice(0,fshown).map(fertCard).join('')}</div>
+     ${fl.length>fshown?`<button class="more" id="fmore">Mostrar mais</button>`:''}
+     ${fl.length===0&&list.length===0?'<div class="empty"><h2>Nada encontrado</h2><p>Tire algum nutriente ou filtro, ou busque por outra empresa.</p></div>':''}`
+   :`<div class="empty"><h2>Base oficial de fertilizantes</h2><p id="fertLoading">${fmeta?'Carregando a base de fertilizantes registrados no MAPA… (só na primeira vez)':'A base com os fertilizantes registrados no MAPA (granulados, foliares, organominerais, corretivos) aparece aqui assim que for carregada.'}</p></div>`}
+  ${canAdmin&&assets&&db?fertAdminBox():''}
+  ${canAdmin&&SUG.filter(x=>x.tipo!=='pos').length?sugBox():''}
+  ${db&&imgLim?`<div class="box"><h3>Cadastrar pela foto do rótulo</h3><p class="muted" style="margin:0">Fotografe o rótulo ou a ficha técnica (até ${imgLim.maxCount} fotos: frente, verso, tabela de garantias). A IA lê nome comercial e garantias e preenche o formulário. ${canAdmin?'Confira os dados antes de salvar.':'Você confere e o cadastro vai para aprovação.'}</p><input type="file" id="fotoIn" accept="image/*" multiple><p class="muted" id="fotoMsg"></p></div>`:''}
+  ${db&&(canAdmin||folEdit)?folForm():''}
+  ${db&&!canAdmin&&!folEdit?'<button class="btn ghost" id="sugNew">Sugerir um produto</button>':''}
+  <p class="muted">Fonte: SIPEAGRO/MAPA — Painel de Indicadores de Fertilizantes${fmeta?.atualizadoEm?`, base de ${fmtD(fmeta.atualizadoEm)}`:''}. Nomes comerciais: cadastro do app. Confira sempre o rótulo.</p>`;
+  const fq=$('#fq');fq.oninput=()=>{FF.q=fq.value;fshown=40;deb(()=>{renderFol();const n=$('#fq');n.focus();n.setSelectionRange(n.value.length,n.value.length)})};
+  v.querySelectorAll('.nut').forEach(b=>b.onclick=()=>{const n=b.dataset.n;FF.nut.has(n)?FF.nut.delete(n):FF.nut.add(n);fshown=40;renderFol()});
+  v.querySelectorAll('.fmodo').forEach(b=>b.onclick=()=>{FF.modo=b.dataset.m;fshown=40;renderFol()});
+  v.querySelectorAll('.fcard').forEach(b=>b.onclick=()=>openFol(b.dataset.id));
+  v.querySelectorAll('.fertcard').forEach(b=>b.onclick=()=>openFert(+b.dataset.fi));
+  $('#fmore')?.addEventListener('click',()=>{fshown+=40;renderFol()});
+  $('#fclr')?.addEventListener('click',()=>{FF.q='';FF.modo='';FF.nut.clear();fshown=40;renderFol()});
+  bindFolForm();bindFoto();bindSug();bindFertAdmin();
+  $('#sugNew')?.addEventListener('click',()=>{folEdit={garantias:[]};renderFol();$('#folForm')?.scrollIntoView({behavior:'smooth'})});
+}
+
+function folForm(){
+  const p=folEdit||{garantias:[]};
+  const gv=n=>{const g=(p.garantias||[]).find(x=>x.n===n);return g?g.v:''};
+  const gu=n=>{const g=(p.garantias||[]).find(x=>x.n===n);return g?.u||'%'};
+  const head=folEdit?._id?'Editar produto':folEdit?._fromPhoto?'Confira os dados lidos do rótulo':folEdit?._sug?'Revisar sugestão':canAdmin?'Cadastrar produto (administrador)':'Sugerir produto';
+  return `<form class="box" id="folForm"><h3>${head}</h3>
+   <div class="ffgrid">
+    <label for="ff-nome">Nome comercial*<input id="ff-nome" required value="${esc(p.nome||'')}"></label>
+    <label for="ff-emp">Empresa<input id="ff-emp" value="${esc(p.empresa||'')}"></label>
+    <label for="ff-reg">Registro MAPA<input id="ff-reg" value="${esc(p.registro||'')}" placeholder="Ex.: SP-000000-0.000000"></label>
+    <label for="ff-tipo">Tipo<select id="ff-tipo">${TIPOS_FOL.map(t=>`<option ${p.tipo===t?'selected':''}>${t}</option>`).join('')}</select></label>
+    <label for="ff-nat">Natureza física<input id="ff-nat" value="${esc(p.natureza||'')}" placeholder="Ex.: Fluido em solução"></label>
+    <label for="ff-link">Link da ficha técnica<input id="ff-link" type="url" value="${esc(p.link||'')}" placeholder="https://"></label>
+   </div>
+   <div><div class="flabel">Garantias (deixe em branco o que não tiver)</div>
+    <div class="gargrid">${NUTR.map(n=>`<label for="ff-g-${n}">${n}<span class="gin"><input id="ff-g-${n}" inputmode="decimal" value="${esc(gv(n))}"><select id="ff-u-${n}" aria-label="Unidade de ${n}">${['%','g/L'].map(u=>`<option ${gu(n)===u?'selected':''}>${u}</option>`).join('')}</select></span></label>`).join('')}</div></div>
+   <label for="ff-ind" class="flabel">Indicação e modo de uso<textarea id="ff-ind" rows="3">${esc(p.indicacao||'')}</textarea></label>
+   <p class="muted" id="ffMsg"></p>
+   <div class="btnrow"><button class="btn" type="submit">${folEdit?._id?'Salvar alterações':canAdmin?'Cadastrar':'Enviar para aprovação'}</button>${folEdit?'<button class="btn ghost" type="button" id="ffCancel">Cancelar</button>':''}</div>
+  </form>`;
+}
+function bindFolForm(){
+  const f=$('#folForm');if(!f)return;
+  $('#ffCancel')?.addEventListener('click',()=>{folEdit=null;renderFol()});
+  f.onsubmit=async e=>{e.preventDefault();
+    const val=id=>$('#'+id).value.trim();
+    const garantias=NUTR.map(n=>({n,v:val('ff-g-'+n).replace(',','.'),u:$('#ff-u-'+n).value})).filter(g=>g.v!=='');
+    const doc={nome:val('ff-nome'),empresa:val('ff-emp'),registro:val('ff-reg'),tipo:$('#ff-tipo').value,natureza:val('ff-nat'),link:val('ff-link'),indicacao:val('ff-ind'),garantias,atualizadoEm:new Date().toISOString()};
+    if(!doc.nome){$('#ffMsg').textContent='Informe o nome comercial.';return}
+    const msg=$('#ffMsg');msg.textContent='Salvando…';
+    try{
+      if(!canAdmin){await db.collection('sugestoes').doc().set({...doc,origem:folEdit?._fromPhoto?'foto':'manual'});folEdit=null;renderFol();const m=$('#fotoMsg')||$('#ffMsg');if(m)m.textContent='Enviado. O produto aparece no catálogo depois da aprovação.';return}
+      if(folEdit?._id)await db.collection('foliares').doc(folEdit._id).set(doc);
+      else await db.collection('foliares').doc().set(doc);
+      if(folEdit?._sug)await db.collection('sugestoes').doc(folEdit._sug).delete();
+      folEdit=null;renderFol();
+    }catch(err){msg.textContent='Não foi possível salvar ('+(err.code||err.message||err)+').'}
+  };
+}
+function openFol(id){
+  const p=FOL.find(x=>x._id===id);if(!p)return;
+  const sh=$('#sheet');
+  sh.innerHTML=`<div class="bar"><div class="wrap"><button class="back" id="back">← Voltar</button><span class="t">${esc(p.nome)}</span></div></div>
+  <div class="wrap content">
+    <div class="hero"><div><span class="pill bio">${esc(p.tipo||'Foliar')}</span></div><h2>${esc(p.nome)}</h2>${p.empresa?`<div class="aka">${esc(p.empresa)}</div>`:''}</div>
+    <div class="box"><h3>Garantias</h3>${(p.garantias||[]).length?`<ul class="ialist">${p.garantias.map(g=>`<li><span class="n">${esc(g.n)}</span><span class="c">${esc(String(g.v).replace('.',','))} ${esc(g.u||'%')}</span></li>`).join('')}</ul>`:'<p class="muted">Sem garantias cadastradas.</p>'}
+      <dl class="kv">${p.natureza?`<dt>Natureza física</dt><dd>${esc(p.natureza)}</dd>`:''}${p.registro?`<dt>Registro MAPA</dt><dd style="font-family:var(--f-mono)">${esc(p.registro)}</dd>`:''}</dl></div>
+    ${calcBox('c:'+p._id,(p.garantias||[]).map(g=>({code:g.n,v:pnum(g.v),u:g.u||'%'})),/fluid|liquid|solu|suspens/i.test(p.natureza||'')||/foliar/i.test(p.tipo||''),'')}
+    ${p.indicacao?`<div class="box"><h3>Indicação e modo de uso</h3><p style="margin:0;white-space:pre-wrap">${esc(p.indicacao)}</p></div>`:''}
+    <div class="btnrow">${/^https?:\/\//.test(p.link||'')?`<a class="btn" href="${esc(p.link)}" target="_blank" rel="noopener">Ficha técnica</a>`:''}<a class="btn ghost" href="https://www.google.com/search?q=${encodeURIComponent('ficha técnica '+p.nome+' '+(p.empresa||''))}" target="_blank" rel="noopener">Buscar na internet</a></div>
+    ${canAdmin&&db?`<div class="box"><h3>Administração</h3><div class="btnrow"><button class="btn ghost" id="fEdit">Editar</button><button class="btn ghost" id="fDel">Excluir</button></div><p class="muted" id="fDelMsg"></p></div>`:''}
+  </div>`;
+  sh.hidden=false;sh.scrollTop=0;document.body.style.overflow='hidden';
+  $('#back').onclick=closeSheet;
+  bindCalc((p.garantias||[]).map(g=>({code:g.n,v:pnum(g.v),u:g.u||'%'})));addStar('c:'+p._id,p.nome,p.empresa||'');
+  $('#fEdit')?.addEventListener('click',()=>{folEdit=p;closeSheet();tab='fol';render();$('#folForm')?.scrollIntoView({behavior:'smooth'})});
+  let armed=false;
+  $('#fDel')?.addEventListener('click',async()=>{
+    if(!armed){armed=true;$('#fDel').textContent='Toque de novo para excluir';$('#fDelMsg').textContent='A exclusão não pode ser desfeita.';return}
+    try{await db.collection('foliares').doc(p._id).delete();closeSheet()}catch(err){$('#fDelMsg').textContent='Não foi possível excluir ('+(err.code||err.message)+').'}
+  });
+}
+
+function sugBox(){
+  const SF=SUG.filter(x=>x.tipo!=='pos');return `<div class="box"><h3>Aguardando aprovação · ${SF.length}</h3><div class="gen">${SF.map(x=>`<div class="sug"><div><b>${esc(x.nome)}</b> <span class="muted">${esc(x.empresa||'')}${x.origem==='foto'?' · lido de foto':''}</span><div class="muted">${esc(garTxt(x))||'Sem garantias'}</div></div><div class="btnrow"><button class="btn ghost" data-sa="rev" data-id="${esc(x._id)}">Revisar</button><button class="btn" data-sa="ok" data-id="${esc(x._id)}">Aprovar</button><button class="btn ghost" data-sa="no" data-id="${esc(x._id)}">Descartar</button></div></div>`).join('')}</div></div>`;
+}
+function bindSug(){
+  document.querySelectorAll('[data-sa]').forEach(b=>b.onclick=async()=>{
+    const x=SUG.find(y=>y._id===b.dataset.id);if(!x)return;const {_id,origem,...doc}=x;
+    try{
+      if(b.dataset.sa==='rev'){folEdit={...doc,_sug:_id};renderFol();$('#folForm')?.scrollIntoView({behavior:'smooth'});return}
+      b.disabled=true;
+      if(b.dataset.sa==='ok')await db.collection('foliares').doc().set({...doc,atualizadoEm:new Date().toISOString()});
+      await db.collection('sugestoes').doc(_id).delete();
+    }catch(err){b.disabled=false;b.textContent='Erro: '+(err.code||err.message)}
+  });
+}
+function bindFoto(){
+  const inp=$('#fotoIn');if(!inp)return;
+  inp.onchange=async()=>{
+    const files=[...inp.files].slice(0,imgLim.maxCount);if(!files.length)return;
+    const msg=$('#fotoMsg');msg.textContent='Lendo o rótulo… pode levar uns segundos.';inp.disabled=true;
+    try{
+      const r=await sampleFn.json(ROTULO_PROMPT,{images:files,modelTier:'default'});
+      if(!r||r.legivel===false){msg.textContent='Não consegui ler um rótulo de fertilizante nessa foto. Tente com mais luz, mais perto da tabela de garantias.';return}
+      const gar=(Array.isArray(r.garantias)?r.garantias:[]).map(g=>({n:String(g.n||'').replace(/\s/g,''),v:String(g.v??'').replace(',','.'),u:g.u==='g/L'?'g/L':'%'})).filter(g=>NUTR.includes(g.n)&&g.v!=='');
+      folEdit={nome:String(r.nome||''),empresa:String(r.empresa||''),registro:String(r.registro||''),tipo:TIPOS_FOL.includes(r.tipo)?r.tipo:'Foliar',natureza:String(r.natureza||''),indicacao:String(r.indicacao||''),garantias:gar,_fromPhoto:true};
+      renderFol();const m=$('#fotoMsg');if(m)m.textContent='Pronto. Confira cada campo com o rótulo antes de salvar.';
+      $('#folForm')?.scrollIntoView({behavior:'smooth'});
+    }catch(err){
+      const c=err?.code;msg.textContent=c==='not_granted'?'Para ler fotos, permita que o app use o Claude (menu de permissões do app).':c==='rate_limited'?'Muitas leituras seguidas. Espere um minuto e tente de novo.':c==='image_rejected'?'Esse formato de imagem não é aceito. Use JPG ou PNG.':'Não foi possível ler a foto ('+(c||err?.message||err)+').';
+    }finally{const i=$('#fotoIn');if(i){i.disabled=false;i.value=''}}
+  };
+}
+async function startFol(){
+  const c=await IDB.get('foliares');if(c&&Array.isArray(c)){FOL=c;folLoaded=true;if(tab==='fol')renderFol()}
+  if(!db){folLoaded=true;if(tab==='fol')renderFol();return}
+  if(canAdmin&&!sugUnsub)sugUnsub=db.collection('sugestoes').onSnapshot(sn=>{SUG=sn.docs.map(d=>({...d.data(),_id:d.id}));if(tab==='plan')renderPlantio();if(tab==='fol'&&!document.activeElement?.closest?.('#folForm'))renderFol()},e=>console.warn(e));
+  if(folUnsub)return;
+  const timer=setTimeout(()=>{folLoaded=true;if(tab==='fol')renderFol()},10000);
+  folUnsub=db.collection('foliares').onSnapshot(snap=>{
+    clearTimeout(timer);
+    FOL=snap.docs.map(d=>({...d.data(),_id:d.id}));folLoaded=true;IDB.set('foliares',FOL);
+    if(tab==='fol'&&!document.activeElement?.closest?.('#folForm'))renderFol();
+  },err=>{clearTimeout(timer);folLoaded=true;console.warn(err);if(tab==='fol')renderFol()});
+}
+
+/* ---------- modo de ação (grupos de resistência FRAC / IRAC / HRAC) pelo grupo químico ---------- */
+const MOA_NOME=[
+ [/captana|folpete/,'FRAC','M04','Multissítio (ftalimidas)'],[/iprodiona|procimidona/,'FRAC','2','Dicarboximidas'],
+ [/dimetomorfe|mandipropamid/,'FRAC','40','CAA'],[/fenpropimorfe/,'FRAC','5','Aminas (morfolinas)'],
+ [/cobre|cupr/,'FRAC','M01','Multissítio (cobre)'],[/^enxofre/,'FRAC','M02','Multissítio (enxofre)'],
+ [/fosfina|fosfeto/,'IRAC','24A','Fosfina'],[/tidiazurom|dimpropiridaz|bicarbonato|fosfato ferrico|terra diatom|dazomete|etefom|metam.?sodico/,null],
+ [/amicarbazona|propanil/,'HRAC','5','FSII'],[/metamifop|pinoxadem/,'HRAC','1','ACCase'],
+ [/carfentrazona|sulfentrazona|flumioxazina|flumicloraque|fomesafem|lactofem|oxifluorfem|acifluorfem|saflufenacil/,'HRAC','14','PPO'],
+ [/tiencarbazona|bispiribaque/,'HRAC','2','ALS'],[/fenpiroximato|tolfenpyrad|tebufenpirade/,'IRAC','21A','METI'],[/fipronil|etiprole/,'IRAC','2B','Fenilpirazóis'],
+ [/piroxassulfona|metolacloro|acetocloro|alacloro/,'HRAC','15','VLCFA'],[/boscalida/,'FRAC','7','SDHI (carboxamidas)'],[/diflufenicam/,'HRAC','12','PDS'],
+ [/cimoxanil/,'FRAC','27','Cianoacetamida-oxima'],[/tiofanato/,'FRAC','1','MBC (benzimidazóis)'],[/protioconazol/,'FRAC','3','DMI (triazóis)'],
+ [/hexitiazox/,'IRAC','10A','Hexitiazox'],[/ciflumetofe|cyflumetofen/,'IRAC','25A','Ciflumetofem'],[/pencicurom/,'FRAC','20','Fenilureias'],[/piraflufem/,'HRAC','14','PPO'],[/fluazinam/,'FRAC','29','Fluazinam'],
+ [/oxatiapiprolin/,'FRAC','49','Oxatiapiprolina'],[/topramezona/,'HRAC','27','HPPD'],[/sulfoxaflor/,'IRAC','4C','Sulfoximinas'],
+ [/clorantraniliprol|ciantraniliprol|tetraniliprol|ciclaniliprol|flubendiamida/,'IRAC','28','Diamidas'],
+];
+const MOA=[
+ // fungicidas (FRAC)
+ [/triazolintiona|triazolinthione|(^|\W)triazol($|\W)|(^|\W)imidazol($|\W)|pirimidinil.?carbinol/,'FRAC','3','DMI (triazóis)'],[/estrobilurina|metoxiacrilato|oximino.?acetato|metoxi.?carbamato/,'FRAC','11','QoI (estrobilurinas)'],
+ [/carboxamida|pirazol.?carboxamida|piridinil.?etil.?benzamida|benzamida.?piridinil/,'FRAC','7','SDHI (carboxamidas)'],
+ [/benzimidazol/,'FRAC','1','MBC (benzimidazóis)'],[/ditiocarbamato/,'FRAC','M03','Multissítio (ditiocarbamatos)'],
+ [/isoftalonitrila|cloronitrila/,'FRAC','M05','Multissítio (clorotalonil)'],
+ [/anilinopirimidina/,'FRAC','9','Anilinopirimidinas'],
+ [/acilalaninato|fenilamida/,'FRAC','4','Fenilamidas'],[/fenilpirrol/,'FRAC','12','Fenilpirróis'],
+ [/amida do [aá]cido carbox|amida do [aá]cido mand|morfolina.?cinamica|valinamida/,'FRAC','40','CAA'],[/cianoacetamida/,'FRAC','27','Cianoacetamida-oxima'],
+ // inseticidas (IRAC)
+ [/piretr[oó]ide|piretroide/,'IRAC','3A','Piretroides'],[/neonicotin/,'IRAC','4A','Neonicotinoides'],[/sulfoximina|sulfoxamina/,'IRAC','4C','Sulfoximinas'],[/butenolida/,'IRAC','4D','Butenolidas'],
+ [/organofosforado/,'IRAC','1B','Organofosforados'],[/metilcarbamato|carbamato de/,'IRAC','1A','Carbamatos'],
+ [/diamida|antranilamida/,'IRAC','28','Diamidas'],[/espinosina/,'IRAC','5','Espinosinas'],[/avermectina|milbemicina/,'IRAC','6','Avermectinas'],
+ [/benzoilur/,'IRAC','15','Benzoilureias'],[/fenilpirazol(?!ina)/,'IRAC','2B','Fenilpirazóis'],[/an[aá]logo de pirazol/,'IRAC','13','Clorfenapir'],
+ [/diacilhidrazina/,'IRAC','18','Diacilhidrazinas'],[/oxadiazina/,'IRAC','22A','Oxadiazinas'],[/[aá]cido tetr[oô]nico|[aá]cido tetr[aâ]mico|cetoenol/,'IRAC','23','Cetoenóis'],
+ [/piridina azometina/,'IRAC','9B','Pimetrozina'],[/[eé]ter piridiloxipropil/,'IRAC','7C','Piriproxifem'],[/feniltiour/,'IRAC','12A','Diafentiurom'],
+ // herbicidas (HRAC)
+ [/glicina substitu/,'HRAC','9','EPSPs (glifosato)'],[/homoalanina/,'HRAC','10','Glufosinato'],
+ [/ariloxifenoxipropi|oxima ciclohexanodiona|ciclohexanodiona|fenilpirazolina/,'HRAC','1','ACCase'],
+ [/sulfonilur|imidazolinona|triazolopirimidina|sulfonanilida|pirimidinil.?(tio)?benzoato|sulfonilaminocarbonil/,'HRAC','2','ALS'],
+ [/triazinona|triazina|ur[eé]ia|uracila/,'HRAC','5','FSII'],[/benzotiadiazinona|nitrila/,'HRAC','6','FSII (bentazona/nitrilas)'],
+ [/bipirid/,'HRAC','22','FSI (bipiridílios)'],
+ [/[aá]cido ariloxialcan|ariloxialcan|[aá]cido piridin|piridiniloxi|[aá]cido benz[oó]ico|[aá]cido quinolinocarbox|auxina/,'HRAC','4','Auxinas sintéticas'],
+ [/dif?enil.?[eé]ter|[eé]ter dif[eê]n[ií]lico|fenilftalimida|n.?fenilftal|pirimidinadiona|oxadiazolona/,'HRAC','14','PPO'],
+ [/dinitroanilina/,'HRAC','3','Dinitroanilinas'],[/cloroacetamida|cloroacetanilida|tiocarbamato|oxiacetamida/,'HRAC','15','VLCFA'],
+ [/isoxazolidinona/,'HRAC','13','Clomazona'],[/tricetona|isoxazol\b|isoxazol /,'HRAC','27','HPPD'],
+];
+function moaOf(grupo,nome){const n=norm(nome);if(n)for(const [re,sys,code,label] of MOA_NOME)if(re.test(n))return sys?{sys,code,label,key:sys+' '+code}:null;const g=norm(grupo);if(!g)return null;for(const [re,sys,code,label] of MOA)if(re.test(g))return {sys,code,label,key:sys+' '+code};return null}
+const moaPill=m=>m?`<span class="pill moa" title="${esc(m.label)}">${esc(m.key)}</span>`:'';
+function itemMoas(it){
+  if(it.tipo!=='def')return [];
+  const p=P.find(x=>x.reg===it.ref);if(!p)return [];
+  const seen=new Map();p.ia.forEach(x=>{if(x.moa&&!seen.has(x.moa.key))seen.set(x.moa.key,x.moa)});return [...seen.values()];
+}
+function progAlerts(prog){
+  const al=[];const count=new Map();
+  prog.forEach((ap,i)=>{const ks=new Set(ap.moas.map(m=>m.key));ks.forEach(k=>count.set(k,(count.get(k)||0)+1));
+    if(i>0){const prev=new Set(prog[i-1].moas.map(m=>m.key));const rep=[...ks].filter(k=>prev.has(k)&&!/^FRAC M/.test(k));
+      if(rep.length)al.push(`<b>${esc(ap.nome)}</b> repete ${rep.map(k=>`<b>${esc(k)}</b>`).join(', ')} da aplicação anterior. Alterne com outro modo de ação.`)}});
+  count.forEach((n,k)=>{if(n>=3&&!/^FRAC M/.test(k))al.push(`<b>${esc(k)}</b> aparece em ${n} aplicações do programa. Verifique o número máximo de aplicações por safra na bula.`)});
+  return al;
+}
+
+/* ---------- favoritos e estoque (salvos no aparelho) ---------- */
+const lsGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch(e){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let FAV=lsGet('fav:v1',{}),EST=lsGet('estoque:v1',{});
+const saveFav=()=>lsSet('fav:v1',FAV),saveEst=()=>lsSet('estoque:v1',EST);
+function itemKey(it){if(it.tipo==='def')return 'd:'+it.ref;if(/^(f|c):/.test(it.ref||''))return it.ref;return null}
+function priceOf(key){
+  if(!key)return {preco:NaN,un:''};
+  if(key.startsWith('d:')){const s=lsGet('calcd2:'+key.slice(2),{});return {preco:pnum(s.preco),un:s.un||''}}
+  const s=lsGet('calc2:'+key,{});return {preco:pnum(s.preco),un:s.un||''};
+}
+function favMeta(key){
+  if(key.startsWith('d:')){const p=P.find(x=>x.reg===key.slice(2));if(p)return {nome:p.nome,sub:p.ia.map(x=>x.nome).join(' + '),un:(iaConc(p.ia[0]||{})||{}).u||(/p[oó]|gr[aâ]nul|WG|WP|SP/i.test(p.form)?'kg':'L'),open:()=>openProduct(p.i)}}
+  if(key.startsWith('f:')){const p=FP.find(x=>x.reg===key.slice(2));if(p)return {nome:p.resumo||p.nome,sub:p.emp+' · Reg. '+p.reg,un:/SOLID/i.test(p.nat)?'kg':'L',open:()=>openFert(p.i)}}
+  if(key.startsWith('c:')){const p=FOL.find(x=>x._id===key.slice(2));if(p)return {nome:p.nome,sub:p.empresa||'',un:/s[oó]lid|gr[aâ]nul|p[oó]/i.test(p.natureza||'')?'kg':'L',open:()=>openFol(p._id)}}
+  return null;
+}
+function addStar(key,nome,sub){
+  const bar=document.querySelector('#sheet .bar .wrap');if(!bar||!key)return;
+  const b=document.createElement('button');b.className='star';b.type='button';
+  const upd=()=>{const on=!!FAV[key];b.textContent=on?'★ Favorito':'☆ Favoritar';b.setAttribute('aria-pressed',on)};
+  b.onclick=()=>{if(FAV[key])delete FAV[key];else FAV[key]={nome,sub,em:Date.now()};saveFav();upd()};
+  upd();bar.appendChild(b);
+}
+// necessidade = soma das aplicações ainda não feitas no programa
+function progNeeds(){
+  const need=new Map();
+  (CAL.prog||[]).forEach(ap=>{if(ap.aplicada||!ap.itens)return;const area=pnum(ap.area);if(!(area>0))return;
+    ap.itens.forEach(it=>{const d=pnum(it.dose);if(!(d>0))return;const k=it.key||('n:'+it.nome);const cur=need.get(k)||{nome:it.nome,un:it.un,q:0};cur.q+=d*area;need.set(k,cur)})});
+  return need;
+}
+function aplicar(i){
+  const ap=CAL.prog[i];if(!ap||ap.aplicada)return;const area=pnum(ap.area);
+  if(area>0&&ap.itens)ap.itens.forEach(it=>{const d=pnum(it.dose);if(it.key&&EST[it.key]&&d>0){const q=pnum(EST[it.key].qtd)||0;EST[it.key].qtd=n2(Math.max(0,q-d*area),2)}});
+  ap.aplicada=new Date().toLocaleDateString('pt-BR');saveEst();saveCal();
+}
+function renderMeus(){
+  const v=$('#view');
+  const keys=Object.keys(FAV).sort((a,b)=>String(FAV[a].nome).localeCompare(String(FAV[b].nome),'pt'));
+  const need=progNeeds();
+  let valor=0,semPreco=0,baixo=0;
+  let avisos=0;
+  const rows=keys.map(k=>{const fm=favMeta(k);const gone=!fm&&((k.startsWith('d:')&&P.length>0)||(k.startsWith('f:')&&FP.length>0));if(gone)avisos++;const m=fm||{nome:FAV[k].nome,sub:FAV[k].sub,un:'L',open:null};const e=EST[k]||{};const un=e.un||m.un;const q=pnum(e.qtd),min=pnum(e.min);
+    const pr=priceOf(k);const val=q>0&&pr.preco>0&&(!pr.un||pr.un===un)?q*pr.preco:NaN;if(isFinite(val))valor+=val;else if(q>0)semPreco++;
+    const low=isFinite(min)&&isFinite(q)&&q<min;if(low)baixo++;
+    return {k,m,un,q,min,val,low,e,gone}});
+  const compras=[...need].map(([k,n])=>{const e=EST[k];const tem=e&&(e.un||n.un)===n.un?pnum(e.qtd)||0:0;return {...n,k,tem,falta:Math.max(0,n.q-tem)}}).filter(x=>x.q>0);
+  const faltando=compras.filter(x=>x.falta>0);
+  v.innerHTML=`
+  ${window.bncProCard?window.bncProCard():''}
+  <div class="kpis"><div><span>Favoritos</span><b>${keys.length}</b></div>
+    <div><span>Valor em estoque</span><b>${valor>0?brl(valor):'—'}</b>${semPreco?`<small>${semPreco} sem preço</small>`:''}</div>
+    <div><span>Abaixo do mínimo</span><b>${baixo}</b></div>${avisos?`<div class="kwarn"><span>Registro saiu da base</span><b>${avisos}</b></div>`:''}</div>
+  ${compras.length?`<div class="box calc"><h3>Lista de compras do programa</h3>
+    <p class="muted" style="margin:0">Soma das aplicações do programa da safra ainda não feitas, menos o que você tem em estoque.</p>
+    <div class="tablewrap"><table class="ctab"><thead><tr><th>Produto</th><th>Precisa</th><th>Em estoque</th><th>Comprar</th></tr></thead><tbody>
+    ${compras.map(c=>`<tr><td><b>${esc(c.nome)}</b></td><td>${n2(c.q,1)} ${esc(c.un)}</td><td>${n2(c.tem,1)} ${esc(c.un)}</td><td><b>${c.falta>0?n2(c.falta,1)+' '+esc(c.un):'ok'}</b></td></tr>`).join('')}
+    </tbody></table></div>
+    ${faltando.length?`<button class="btn ghost" id="m-copiar">Copiar lista de compras</button><p class="muted" id="m-cmsg" style="margin:0"></p>`:'<p class="muted" style="margin:0">O estoque cobre todo o programa.</p>'}</div>`:''}
+  ${keys.length?`<div class="list">${rows.map(r=>`<div class="mcard ${r.low||r.gone?'low':''}">
+      <div class="mhead"><button class="mopen" data-k="${esc(r.k)}"><b>${esc(r.m.nome)}</b><span>${esc(r.m.sub||'')}</span></button><button class="xbtn" data-unfav="${esc(r.k)}" aria-label="Remover dos favoritos">★</button></div>
+      <div class="mrow">
+        <label>Estoque<span class="gin sm"><input data-e="qtd" data-k="${esc(r.k)}" inputmode="decimal" value="${esc(r.e.qtd||'')}" placeholder="0"><select data-e="un" data-k="${esc(r.k)}" aria-label="Unidade"><option ${r.un==='L'?'selected':''}>L</option><option ${r.un==='kg'?'selected':''}>kg</option></select></span></label>
+        <label>Mínimo<input class="sm1" data-e="min" data-k="${esc(r.k)}" inputmode="decimal" value="${esc(r.e.min||'')}" placeholder="—"></label>
+        <div class="mval"><span>Valor</span><b>${isFinite(r.val)?brl(r.val):'—'}</b></div>
+      </div>
+      ${r.low?`<p class="mlow">Abaixo do mínimo de ${n2(r.min,1)} ${esc(r.un)}</p>`:''}
+      ${r.gone?`<p class="mlow">Este registro não consta mais na base oficial atual (cancelado, suspenso ou alterado). Confira no AGROFIT/MAPA antes de comprar ou aplicar.</p>`:''}
+    </div>`).join('')}</div>`
+  :`<div class="empty"><h2>Nenhum favorito ainda</h2><p>Abra a ficha de um defensivo ou fertilizante e toque em <b>☆ Favoritar</b>. Os produtos que você usa ficam aqui, com o estoque do barracão, e funcionam sem internet.</p></div>`}
+  <p class="muted">O valor usa o preço por L/kg que você digitou na calculadora de cada ficha. Favoritos e estoque ficam salvos neste aparelho.</p>`;
+  window.bncProBind&&window.bncProBind();
+  v.querySelectorAll('.mopen').forEach(b=>b.onclick=()=>{const m=favMeta(b.dataset.k);if(m&&m.open)m.open()});
+  v.querySelectorAll('[data-unfav]').forEach(b=>b.onclick=()=>{delete FAV[b.dataset.unfav];saveFav();renderMeus()});
+  v.querySelectorAll('[data-e]').forEach(el=>{const h=()=>{const k=el.dataset.k;EST[k]=EST[k]||{};EST[k][el.dataset.e]=el.value;saveEst();deb(()=>{renderMeus();const n=document.querySelector(`[data-e="${el.dataset.e}"][data-k="${CSS.escape(k)}"]`);if(n&&n.tagName==='INPUT'){n.focus();n.setSelectionRange(n.value.length,n.value.length)}})};el.addEventListener(el.tagName==='SELECT'?'change':'input',h)});
+  $('#m-copiar')?.addEventListener('click',async()=>{const txt='Lista de compras\n'+faltando.map(c=>`- ${c.nome}: ${n2(c.falta,1)} ${c.un}`).join('\n');const msg=$('#m-cmsg');
+    try{await navigator.clipboard.writeText(txt);msg.textContent='Copiado. Cole no WhatsApp ou no e-mail da revenda.'}catch(e){msg.innerHTML='<textarea class="cfilter" rows="5" readonly>'+esc(txt)+'</textarea>';msg.querySelector('textarea').select()}});
+}
+
+/* ---------- preço de referência da comunidade ---------- */
+const UFS=['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'];
+let PRECOS=new Map(),myUid=null,precosUnsub=null,myPrecos=null;
+let myUF=lsGet('uf:v1','');
+const mesAtual=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+function mesesAtras(m){const [y,mm]=m.split('-').map(Number);const d=new Date();return (d.getFullYear()-y)*12+(d.getMonth()+1-mm)}
+function startPrecos(userNs){
+  if(!db||precosUnsub)return;
+  (async()=>{try{myUid=userNs?await userNs.id():null}catch(e){}
+    precosUnsub=db.collection('precos').onSnapshot(snap=>{
+      const map=new Map();myPrecos=null;
+      snap.docs.forEach(d=>{const data=d.data()||{};if(d.id===myUid)myPrecos=data;
+        (Array.isArray(data.itens)?data.itens:[]).forEach(it=>{const p=Number(it.preco);if(!it.k||!(p>0&&p<100000)||!/^(L|kg)$/.test(it.un)||!/^\d{4}-\d{2}$/.test(it.mes||''))return;if(mesesAtras(it.mes)>12)return;
+          const arr=map.get(it.k)||[];arr.push({preco:p,un:it.un,uf:UFS.includes(it.uf)?it.uf:'',mes:it.mes});map.set(it.k,arr)})});
+      PRECOS=map;document.querySelectorAll('.refp').forEach(el=>el.dispatchEvent(new Event('refresh')));
+    },err=>console.warn(err));
+  })();
+}
+function stats(arr){if(!arr.length)return null;const v=arr.map(x=>x.preco).sort((a,b)=>a-b);const mid=v.length>>1;return {n:v.length,med:v.length%2?v[mid]:(v[mid-1]+v[mid])/2,min:v[0],max:v[v.length-1]}}
+function refHtml(key,un,preco){
+  if(!db)return '';
+  const all=(PRECOS.get(key)||[]).filter(x=>x.un===un);
+  const s=stats(all);const su=myUF?stats(all.filter(x=>x.uf===myUF)):null;
+  let h='';
+  if(s&&s.n>=3){
+    h+=`<div class="refline"><span>Preço de referência da comunidade · últimos 12 meses</span><b>${brl(s.med)}/${un}</b> <small>mediana de ${s.n} preços · faixa ${brl(s.min)} a ${brl(s.max)}</small></div>`;
+    if(su&&su.n>=3)h+=`<div class="refline"><span>Em ${esc(myUF)}</span><b>${brl(su.med)}/${un}</b> <small>${su.n} preços</small></div>`;
+    if(preco>0){const dif=(preco/(su&&su.n>=3?su.med:s.med)-1)*100;h+=`<p class="muted" style="margin:0">Seu preço está <b>${Math.abs(dif)<3?'na média':n2(Math.abs(dif),0)+'% '+(dif>0?'acima':'abaixo')}</b> da mediana${su&&su.n>=3?' da sua UF':''}.</p>`}
+  }else h+=`<p class="muted" style="margin:0">Ainda não há preços suficientes da comunidade para este produto${s?` (${s.n} de 3 necessários)`:''}. Compartilhe o seu e ajude a formar a referência.</p>`;
+  if(db&&myUid){
+    const mine=(myPrecos&&Array.isArray(myPrecos.itens)?myPrecos.itens:[]).find(x=>x.k===key);
+    h+=`<div class="sharerow"><select class="ref-uf" aria-label="Seu estado"><option value="">UF</option>${UFS.map(u=>`<option ${u===myUF?'selected':''}>${u}</option>`).join('')}</select>
+      <button class="btn ghost ref-share" ${preco>0?'':'disabled'}>${mine?'Atualizar meu preço':'Compartilhar meu preço'} (anônimo)</button></div>
+      ${mine?`<p class="muted" style="margin:0">Você informou ${brl(Number(mine.preco))}/${esc(mine.un)} em ${esc(mine.mes.split('-').reverse().join('/'))}.</p>`:''}
+      <p class="muted ref-msg" style="margin:0"></p>`;
+  }
+  return h;
+}
+function bindRef(box,key,getVals){
+  let el=box.querySelector('.refp');if(!el){el=document.createElement('div');el.className='refp';box.appendChild(el)}
+  const draw=()=>{const {un,preco}=getVals();el.innerHTML=refHtml(key,un,preco);
+    const uf=el.querySelector('.ref-uf');if(uf)uf.onchange=()=>{myUF=uf.value;lsSet('uf:v1',myUF);draw()};
+    const b=el.querySelector('.ref-share');if(b)b.onclick=async()=>{
+      const {un,preco}=getVals();const msg=el.querySelector('.ref-msg');
+      if(!myUF){msg.textContent='Escolha sua UF antes de compartilhar.';return}
+      if(!(preco>0&&preco<100000)){msg.textContent='Digite um preço válido.';return}
+      b.disabled=true;msg.textContent='Enviando…';
+      try{
+        const ref=db.collection('precos').doc(myUid);const cur=await ref.get();
+        const itens=(cur.exists&&Array.isArray(cur.data().itens)?cur.data().itens:[]).filter(x=>x.k!==key);
+        itens.push({k:key,preco:Math.round(preco*100)/100,un,uf:myUF,mes:mesAtual()});
+        await ref.set({itens:itens.slice(-400)});
+        msg.textContent='Obrigado! Seu preço entrou na referência, sem identificar você.';
+      }catch(err){b.disabled=false;msg.textContent=err?.code==='not_granted'||err?.code==='permission_denied'?'Sua conta não tem permissão para compartilhar preços neste app.':'Não foi possível enviar ('+(err.code||err.message)+').'}
+    };
+  };
+  el.addEventListener('refresh',draw);
+  return draw;
+}
+
+/* ---------- plantio: janelas do ZARC (Tábua de Risco / MAPA) ---------- */
+let CULT=null,cultLoading=false;
+async function loadCult(){if(CULT||cultLoading)return;cultLoading=true;try{const c=await IDB.get('cult');if(c&&c.data)CULT=c.data;
+  const r=await fetch('data/cultivares_soja.json');if(r.ok){const d=await r.json();if(!CULT||d.gerado>CULT.gerado||d.safra!==CULT.safra){CULT=d;await IDB.set('cult',{data:d})}}}catch(e){console.warn(e)}finally{cultLoading=false;if(tab==='plan')renderPlantio()}}
+/* ---------- posicionamento de cultivares (catálogos das empresas, com aprovação) ---------- */
+let POS={},posUnsub=null,posPend=null,POSLOADED=false;
+const posId=n=>norm(n).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,120)||'x';
+const POS_PROMPT=`As imagens são páginas de catálogo ou ficha de posicionamento de cultivares de SOJA de uma empresa de sementes no Brasil. Extraia SOMENTE o que está impresso; não complete nada de memória nem invente valores. Se uma tabela usa cores para época preferencial ou tolerada, indique em "preferencial" (true/false) só quando a legenda permitir saber; senão use null.
+Responda só com JSON neste formato:
+{"legivel":true,"empresa":"nome da empresa/marca","safra":"safra do catálogo se impressa, ex.: 2026/2027, ou vazio","cultivares":[{"nome":"nome da cultivar exatamente como impresso","gmr":"grupo de maturação relativa, ex.: 7.4, ou vazio","tecnologia":"ex.: IPRO, I2X, RR, convencional, ou vazio","ciclo":"texto do ciclo se houver","regioes":[{"regiao":"REC, estado ou região como impresso","ciclo_dias":"","epocas":[{"periodo":"ex.: 1ª quinzena de outubro, Plantio novembro","populacao":"valor como impresso, ex.: 280-340 ou 14","unidade":"ex.: mil plantas/ha, plantas/m","preferencial":null}]}],"tolerancias":[{"alvo":"doença ou nematoide","nivel":"como impresso, ex.: R, MR, S, tolerante"}],"beneficios":["destaques impressos"],"cuidados":["recomendações/atenções impressas"]}]}
+Se as imagens não forem de cultivares de soja ou estiverem ilegíveis, devolva {"legivel":false}.`;
+const cleanS=(v,max=300)=>String(v??'').replace(/[\u0000-\u001f]/g,' ').trim().slice(0,max);
+function cleanPos(c,empresa,safra){
+  const arr=(a,f,max=40)=>Array.isArray(a)?a.slice(0,max).map(f).filter(Boolean):[];
+  return {nome:cleanS(c.nome,80),empresa:cleanS(c.empresa||empresa,120),safra:cleanS(c.safra||safra,20),gmr:cleanS(c.gmr,20),tecnologia:cleanS(c.tecnologia,40),ciclo:cleanS(c.ciclo,80),
+    regioes:arr(c.regioes,r=>r&&({regiao:cleanS(r.regiao,120),ciclo_dias:cleanS(r.ciclo_dias,30),epocas:arr(r.epocas,e=>e&&({periodo:cleanS(e.periodo,60),populacao:cleanS(e.populacao,40),unidade:cleanS(e.unidade,30),preferencial:e.preferencial===true?true:e.preferencial===false?false:null}),24)}),60),
+    tolerancias:arr(c.tolerancias,t=>t&&t.alvo?({alvo:cleanS(t.alvo,80),nivel:cleanS(t.nivel,30)}):null),
+    beneficios:arr(c.beneficios,b=>cleanS(b,200),15),cuidados:arr(c.cuidados,b=>cleanS(b,200),15)};
+}
+function startPos(){
+  if(posUnsub||!db)return;
+  posUnsub=db.collection('posicionamento').onSnapshot(sn=>{const m={};sn.docs.forEach(d=>{const x=d.data();if(x&&x.nome)m[posId(x.nome)]=x});POS=m;POSLOADED=true;if(tab==='plan'&&!document.activeElement?.closest?.('.posup'))renderPlantio()},e=>console.warn(e));
+}
+async function loadPosStatic(){try{const r=await fetch('data/posicionamento.json');if(r.ok){const d=await r.json();(d.itens||[]).forEach(x=>{const k=posId(x.nome);if(!POS[k])POS[k]=x})}}catch(e){}}
+function posCard(p,extra=''){
+  const regs=p.regioes||[];
+  return `<div class="poscard">
+    <div class="zhead"><b>Posicionamento da empresa</b><span class="muted">${esc(p.empresa||'')}${p.safra?' · catálogo '+esc(p.safra):''}</span></div>
+    <div class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${p.gmr?`<span class="pill">GMR ${esc(p.gmr)}</span>`:''}${p.tecnologia?`<span class="pill">${esc(p.tecnologia)}</span>`:''}${p.ciclo?`<span class="pill">${esc(p.ciclo)}</span>`:''}</div>
+    ${regs.length?`<div class="tablewrap"><table class="ctab"><thead><tr><th>Região</th><th>Ciclo</th><th>Época · população</th></tr></thead><tbody>
+      ${regs.map(r=>`<tr><td><b>${esc(r.regiao)}</b></td><td>${esc(r.ciclo_dias||'—')}</td><td>${(r.epocas||[]).map(e=>`<div>${esc(e.periodo)}: <b>${esc(e.populacao||'—')}</b> ${esc(e.unidade||'')}${e.preferencial===true?' <span class="pill">preferencial</span>':e.preferencial===false?' <span class="muted">(tolerada)</span>':''}</div>`).join('')}</td></tr>`).join('')}</tbody></table></div>`:''}
+    ${p.tolerancias&&p.tolerancias.length?`<p style="margin:0"><b>Reação a doenças e nematoides:</b> ${p.tolerancias.map(t=>`${esc(t.alvo)} (${esc(t.nivel)})`).join(' · ')}</p>`:''}
+    ${p.beneficios&&p.beneficios.length?`<p style="margin:0"><b>Destaques:</b> ${p.beneficios.map(esc).join(' · ')}</p>`:''}
+    ${p.cuidados&&p.cuidados.length?`<p style="margin:0"><b>Cuidados:</b> ${p.cuidados.map(esc).join(' · ')}</p>`:''}
+    <p class="muted" style="margin:0">Informação da empresa obtentora, extraída do catálogo enviado${p.aprovadoEm?' e aprovada em '+esc(fmtD(p.aprovadoEm)):''}. O que vale para seguro e Proagro é a portaria do ZARC.</p>${extra}</div>`;
+}
+function posForCultivar(nome,emp){
+  const p=POS[posId(nome)];
+  const q=encodeURIComponent(`posicionamento cultivar soja ${nome} ${emp||''}`);
+  return `${p?posCard(p):`<p class="muted" style="margin:0">Ainda não há posicionamento desta cultivar no app.</p>`}
+    <div class="btnrow"><a class="btn ghost" href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Buscar posicionamento no site da empresa</a></div>`;
+}
+function posUploadBox(){
+  if(!(db&&imgLim))return '';
+  const pend=canAdmin?SUG.filter(x=>x.tipo==='pos'):[];
+  return `<div class="box posup"><h3>Enviar catálogo de cultivares</h3>
+    <p class="muted" style="margin:0">Fotografe ou faça print das páginas do catálogo atual da empresa (até ${imgLim.maxCount} imagens por vez). A IA lê população por região e época, GMR, tolerâncias e cuidados. ${canAdmin?'Você confere e publica cada cultivar.':'O envio vai para aprovação antes de aparecer no app.'}</p>
+    <input type="file" id="posIn" accept="image/*" multiple><p class="muted" id="posMsg"></p>
+    ${posPend?`<div class="gen">${posPend.map((c,i)=>`<div class="sug" style="display:grid;gap:8px">${posCard(c,`<div class="btnrow"><button class="btn" data-posok="${i}">${canAdmin?'Publicar':'Enviar para aprovação'}</button><button class="btn ghost" data-posno="${i}">Descartar</button></div>`)}<b>${esc(c.nome)}</b></div>`).join('')}</div>`:''}
+    ${pend.length?`<h3 style="margin-top:6px">Aguardando aprovação · ${pend.length}</h3><div class="gen">${pend.map(x=>`<div class="sug" style="display:grid;gap:8px"><b>${esc(x.dados?.nome||'')}</b>${posCard(x.dados||{},`<div class="btnrow"><button class="btn" data-sposok="${esc(x._id)}">Publicar</button><button class="btn ghost" data-sposno="${esc(x._id)}">Descartar</button></div>`)}</div>`).join('')}</div>`:''}
+  </div>`;
+}
+async function savePos(c){
+  const doc={...c,aprovadoEm:new Date().toISOString()};
+  await db.collection('posicionamento').doc(posId(c.nome)).set(doc);
+}
+function bindPos(){
+  const inp=$('#posIn');
+  if(inp)inp.onchange=async()=>{const files=[...inp.files].slice(0,imgLim.maxCount);if(!files.length)return;const msg=$('#posMsg');msg.textContent='Lendo as páginas… pode levar até um minuto.';inp.disabled=true;
+    try{const r=await sampleFn.json(POS_PROMPT,{images:files,modelTier:'default'});
+      if(!r||r.legivel===false||!Array.isArray(r.cultivares)||!r.cultivares.length){msg.textContent='Não consegui ler cultivares de soja nessas imagens. Tente fotos mais nítidas, uma página por foto.';return}
+      posPend=r.cultivares.map(c=>cleanPos(c,r.empresa,r.safra)).filter(c=>c.nome);renderPlantio();const m=$('#posMsg');if(m)m.textContent=`${posPend.length} cultivar${posPend.length>1?'es':''} lida${posPend.length>1?'s':''}. Confira cada uma com o catálogo antes de ${canAdmin?'publicar':'enviar'}.`;
+    }catch(err){const c=err?.code;msg.textContent=c==='not_granted'?'Para ler imagens, permita que o app use o Claude (menu de permissões do app).':c==='rate_limited'?'Muitas leituras seguidas. Espere um minuto.':'Não foi possível ler as imagens ('+(c||err?.message||err)+').'}
+    finally{const i=$('#posIn');if(i){i.disabled=false;i.value=''}}};
+  document.querySelectorAll('[data-posok]').forEach(b=>b.onclick=async()=>{const c=posPend[+b.dataset.posok];b.disabled=true;
+    try{if(canAdmin)await savePos(c);else await db.collection('sugestoes').doc().set({tipo:'pos',nome:c.nome,empresa:c.empresa,dados:c,atualizadoEm:new Date().toISOString()});
+      posPend.splice(+b.dataset.posok,1);if(!posPend.length)posPend=null;renderPlantio()}catch(e){b.disabled=false;b.textContent='Erro: '+(e.code||e.message)}});
+  document.querySelectorAll('[data-posno]').forEach(b=>b.onclick=()=>{posPend.splice(+b.dataset.posno,1);if(!posPend.length)posPend=null;renderPlantio()});
+  document.querySelectorAll('[data-sposok]').forEach(b=>b.onclick=async()=>{const x=SUG.find(s=>s._id===b.dataset.sposok);if(!x)return;b.disabled=true;try{await savePos(cleanPos(x.dados||{},x.empresa,''));await db.collection('sugestoes').doc(x._id).delete()}catch(e){b.disabled=false;b.textContent='Erro: '+(e.code||e.message)}});
+  document.querySelectorAll('[data-sposno]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await db.collection('sugestoes').doc(b.dataset.sposno).delete()}catch(e){b.disabled=false}});
+}
+
+function cultBox(){
+  if(!CULT){loadCult();return '<p class="muted" style="margin:0">Carregando a lista de cultivares indicadas…</p>'}
+  const uf=ZF.uf;const C=CULT.C,E=CULT.E;
+  const noUF=uf?CULT.L.filter(l=>l[0]===uf):[];
+  const nomes=[...new Set((uf?noUF:CULT.L).map(l=>l[4]))].map(i=>C[i]).sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));
+  const q=(ZF.cultivar||'').trim();let res='';
+  if(q){const ci=C.findIndex(c=>norm(c)===norm(q));
+    if(ci<0)res=`<p class="note">Não encontrei “${esc(q)}” entre as cultivares indicadas nas portarias de soja. Confira a grafia (ex.: com ou sem espaço antes de IPRO/I2X).</p>`;
+    else{const rows=CULT.L.filter(l=>l[4]===ci);const emp=E[rows[0][3]];
+      if(!uf){const ufs=[...new Set(rows.map(l=>l[0]))].sort();res=`<p style="margin:0"><b>${esc(C[ci])}</b> <span class="muted">· ${esc(emp)}</span><br>Indicada em ${ufs.length} estado${ufs.length>1?'s':''}: ${esc(ufs.join(', '))}. Escolha o estado para ver o grupo.</p>`}
+      else{const r=rows.filter(l=>l[0]===uf);
+        if(!r.length)res=`<p class="note"><b>${esc(C[ci])}</b> não consta como indicada na portaria de soja de ${esc(uf)} (Portaria nº ${CULT.portarias[uf]}/2026). Fora da lista, a lavoura não tem cobertura do ZARC para seguro e Proagro.</p>`;
+        else{const gs=[...new Set(r.map(l=>l[2]))];
+          res=`<p style="margin:0"><b>${esc(C[ci])}</b> <span class="muted">· ${esc(emp)}</span></p><ul class="steps" style="margin:0">${r.map(l=>`<li>Macrorregião ${l[1]}: <b>Grupo ${'I'.repeat(l[2])}</b></li>`).join('')}</ul>
+          <div class="btnrow">${gs.map(g=>`<button class="btn ghost" data-gsel="${19+g}">Ver janela do Grupo ${'I'.repeat(g)}</button>`).join('')}</div>`}}
+      res+=posForCultivar(C[ci],emp)}}
+  return `<div class="cgrid"><label for="z-cv">Cultivar (opcional)<input id="z-cv" list="z-cvl" value="${esc(q)}" placeholder="Ex.: ${esc(nomes[0]||'BRS 284')}" autocomplete="off"><datalist id="z-cvl">${nomes.map(n=>`<option value="${esc(n)}">`).join('')}</datalist></label></div>${res}
+    <p class="muted" style="margin:0">${uf?`${fmtN(nomes.length)} cultivares indicadas em ${esc(uf)}`:`${fmtN(C.length)} cultivares nas portarias`} · lista oficial das portarias de soja do ZARC, safra ${esc(CULT.safra)}.</p>`;
+}
+let ZARC=null,zmeta=null,zLoading=false;
+const ZF=lsGet('zarcf:v1',{uf:'',mun:'',cult:'',solo:'',grupo:'',manejo:'1',nm:''});
+const SOLOS={1:'Arenoso (tipo 1)',2:'Textura média (tipo 2)',3:'Argiloso (tipo 3)',11:'AD1 (retém menos água)',12:'AD2',13:'AD3',14:'AD4',15:'AD5',16:'AD6 (retém mais água)'};
+const CICLOS={13:'Perene',19:'Semiperene',20:'Grupo I',21:'Grupo II',22:'Grupo III',24:'Grupo IV',25:'Grupo V',26:'Grupo VI'};
+const MANEJOS={1:'Sequeiro',2:'Irrigado',3:'Irrigado com controle de geada'};
+const GMR_UF={AC:{p:193,m:[[4,7.9,8.5]]},AL:{p:194,m:[[5,8.7,9.3]],sem3:1},AP:{p:195,m:[[5,8.7,9.3]],sem3:1},BA:{p:196,m:[[4,7.9,8.5],[5,8.7,9.3]]},DF:{p:197,m:[[3,7.6,8.2]]},GO:{p:198,m:[[3,7.6,8.2],[4,7.9,8.5]]},MA:{p:199,m:[[5,8.7,9.3]]},MG:{p:200,m:[[2,6.8,7.6],[3,7.6,8.2]]},MS:{p:201,m:[[2,6.8,7.6],[3,7.6,8.2]]},MT:{p:202,m:[[4,7.9,8.5]]},PA:{p:203,m:[[5,8.7,9.3]]},PI:{p:204,m:[[5,8.7,9.3]],sem3:1},PR:{p:205,m:[[1,6.4,7.4],[2,6.8,7.6]]},RJ:{p:206,m:[[2,6.8,7.6],[3,7.6,8.2]]},RO:{p:207,m:[[4,7.9,8.5]]},RR:{p:208,m:[[5,8.7,9.3]],sem3:1},RS:{p:209,m:[[1,6.2,7.2]]},SC:{p:210,m:[[1,6.4,7.4]]},SP:{p:211,m:[[1,6.4,7.4],[2,6.8,7.6],[3,7.6,8.2]]},TO:{p:212,m:[[4,7.9,8.5],[5,8.7,9.3]]}};
+const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const decLabel=i=>{const m=Math.floor(i/3),p=i%3;const ini=[1,11,21][p];const fim=p<2?ini+9:new Date(2025,m+1,0).getDate();return `${String(ini).padStart(2,'0')} a ${String(fim).padStart(2,'0')}/${MESES[m].toLowerCase()}`};
+// código de risco no padrão: '2'=20%, '3'=30%, '4'=40%, '0'=sem indicação
+const RISCO={'2':{t:'Risco 20%',c:'z2'},'3':{t:'Risco 30%',c:'z3'},'4':{t:'Risco 40%',c:'z4'}};
+const ZWORKER=`
+self.onmessage=async e=>{try{
+  const file=e.data;const size=file.size;
+  const reader=file.stream().pipeThrough(new TextDecoderStream('utf-8')).getReader();
+  const S=[],SI=new Map();const s=v=>{v=(v||'').trim().replace(/\\s+/g,' ');let i=SI.get(v);if(i===undefined){i=S.length;S.push(v);SI.set(v,i)}return i};
+  const PAT=[],PI=new Map();const pat=v=>{let i=PI.get(v);if(i===undefined){i=PAT.length;PAT.push(v);PI.set(v,i)}return i};
+  const MUN={};const R=[];let idx=null,sep=';',buf='',chars=0,n=0,kept=0,repl=0,vals=new Map();
+  function split(l){const row=[];let f='',q=false;for(let i=0;i<l.length;i++){const c=l[i];if(q){if(c==='"'){if(l[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else{if(c==='"'&&f==='')q=true;else if(c===sep){row.push(f);f=''}else f+=c}}row.push(f);return row}
+  const need=['Nome_cultura','SafraIni','SafraFin','Cod_Ciclo','Cod_Solo','geocodigo','UF','municipio','Cod_Outros_Manejos','Cod_Clima','Cod_NM','Portaria'];
+  function line(l){l=l.replace(/\\r$/,'');if(!l)return;
+    if(!idx){l=l.replace(/^\\uFEFF/,'');sep=(l.split(';').length>=l.split(',').length)?';':',';const h=split(l).map(x=>x.trim());const low=h.map(x=>x.toLowerCase());idx={};
+      need.forEach(k=>{idx[k]=low.indexOf(k.toLowerCase())});for(let d=1;d<=36;d++)idx['dec'+d]=low.findIndex(x=>x.replace(/\\s/g,'')==='dec'+d);
+      const miss=need.filter(k=>idx[k]<0).concat(idx.dec1<0?['dec1..dec36']:[]);if(miss.length)throw new Error('Arquivo não parece ser a Tábua de Risco do ZARC. Colunas ausentes: '+miss.join(', '));return}
+    const r=split(l);n++;const g=k=>(r[idx[k]]||'').trim();
+    const cult=g('Nome_cultura');if(!/soja|milho|algod/i.test(cult))return;
+    let d='';for(let k=1;k<=36;k++){const v=(r[idx['dec'+k]]||'').trim();if(vals.size<40)vals.set(v,(vals.get(v)||0)+1);else if(vals.has(v))vals.set(v,vals.get(v)+1);
+      d+= v==='20'?'2':v==='30'?'3':v==='40'?'4':(v===''||v==='0')?'0':'9'}
+    if(!/[2-49]/.test(d))return;
+    const geo=g('geocodigo');if(!MUN[geo])MUN[geo]=[g('UF'),g('municipio')];
+    R.push([s(cult),+g('Cod_Ciclo')||0,+g('Cod_Solo')||0,+g('Cod_Outros_Manejos')||0,+g('Cod_NM')||0,+g('Cod_Clima')||0,geo,pat(d),s(g('Portaria')),s(g('SafraIni')+'/'+g('SafraFin'))]);kept++;
+  }
+  for(;;){const {done,value}=await reader.read();if(done)break;chars+=value.length;for(let k=0;k<value.length;k+=997)if(value.charCodeAt(k)===65533)repl++;
+    buf+=value;let st=0,e2;while((e2=buf.indexOf('\\n',st))>=0){line(buf.slice(st,e2));st=e2+1}buf=buf.slice(st);postMessage({prog:Math.min(.99,chars/size)})}
+  if(buf)line(buf);
+  if(repl>50)throw new Error('O arquivo não está em UTF-8. Baixe de novo direto do site do MAPA e selecione sem abrir no Excel.');
+  postMessage({done:{v:1,fonte:'ZARC/MAPA - Tábua de Risco',gerado:new Date().toISOString(),linhas:n,S,PAT,MUN,R},vals:[...vals].slice(0,40)});
+}catch(err){postMessage({error:String(err.message||err)})}};`;
+let zPending=null;
+async function loadZarc(){
+  if(ZARC||zLoading)return;zLoading=true;
+  try{
+    const c=await IDB.get('zarc');let cid=null;if(c&&c.data){ZARC=c.data;cid=c.assetId;zmeta=zmeta||{atualizadoEm:ZARC.gerado}}
+    if(db){try{const sn=await db.doc('config/zarc').get();if(sn.exists){zmeta=sn.data();if(zmeta.assetId&&zmeta.assetId!==cid){const r=await fetch('/_blob/'+zmeta.assetId);if(r.ok){ZARC=await r.json();await IDB.set('zarc',{assetId:zmeta.assetId,data:ZARC})}}}}catch(e){console.warn(e)}}
+    if(!ZARC||!(zmeta&&zmeta.assetId)){try{const r=await fetch('data/zarc.json');if(r.ok){const d=await r.json();if(!ZARC||(d.gerado>ZARC.gerado)){ZARC=d;zmeta=zmeta||{atualizadoEm:d.gerado};await IDB.set('zarc',{assetId:'static:'+d.gerado,data:ZARC})}}}catch(e){}}
+  }finally{zLoading=false;if(tab==='plan')renderPlantio()}
+}
+function zRows(){
+  if(!ZARC)return [];const S=ZARC.S;
+  return ZARC.R.filter(r=>(!ZF.cult||S[r[0]]===ZF.cult)&&(!ZF.uf||ZARC.MUN[r[6]][0]===ZF.uf)&&(!ZF.mun||ZARC.MUN[r[6]][1]===ZF.mun));
+}
+function janelas(d){ // agrupa decêndios consecutivos com indicação
+  const out=[];let i=0;while(i<36){if(d[i]!=='0'){let j=i;while(j+1<36&&d[j+1]!=='0')j++;out.push([i,j]);i=j+1}else i++}
+  if(out.length>1&&out[0][0]===0&&out[out.length-1][1]===35){const f=out.shift();out[out.length-1]=[out[out.length-1][0],f[1]+36]}
+  return out;
+}
+function renderPlantio(){
+  const v=$('#view');
+  if(!ZARC){v.innerHTML=`<div class="empty"><h2>Janelas de plantio (ZARC)</h2><p>${zLoading?'Carregando o zoneamento… na primeira vez pode levar alguns segundos.':'O zoneamento agrícola de risco climático do MAPA (soja, milho e algodão) aparece aqui assim que for carregado.'}</p></div>${canAdmin&&assets&&db?zAdminBox():''}`;bindZAdmin();loadZarc();return}
+  const S=ZARC.S;
+  const culturas=[...new Set(ZARC.R.map(r=>S[r[0]]))].sort((a,b)=>a.localeCompare(b,'pt'));
+  const ufs=[...new Set(Object.values(ZARC.MUN).map(m=>m[0]))].sort();
+  const muns=ZF.uf?Object.values(ZARC.MUN).filter(m=>m[0]===ZF.uf).map(m=>m[1]).sort((a,b)=>a.localeCompare(b,'pt')):[];
+  const base=(ZF.cult&&ZF.uf&&ZF.mun)?zRows():[];
+  const opts=(arr,cur,lab)=>arr.map(x=>`<option value="${esc(x)}" ${String(x)===String(cur)?'selected':''}>${esc(lab?lab(x):x)}</option>`).join('');
+  const solos=[...new Set(base.map(r=>r[2]))].sort((a,b)=>a-b),grupos=[...new Set(base.map(r=>r[1]))].sort((a,b)=>a-b),manejos=[...new Set(base.map(r=>r[3]))].sort(),nms=[...new Set(base.map(r=>r[4]))].sort();
+  const sel=base.filter(r=>(!ZF.solo||r[2]==ZF.solo)&&(!ZF.grupo||r[1]==ZF.grupo)&&(!ZF.manejo||r[3]==ZF.manejo||!manejos.includes(+ZF.manejo))&&(!ZF.nm||r[4]==ZF.nm||!nms.includes(+ZF.nm)));
+  v.innerHTML=`
+  <div class="box calc"><h3>Janela de plantio · ZARC</h3>
+    <div class="cgrid">
+      <label for="z-cult">Cultura<select id="z-cult"><option value="">Escolha</option>${opts(culturas,ZF.cult)}</select></label>
+      <label for="z-uf">Estado<select id="z-uf"><option value="">UF</option>${opts(ufs,ZF.uf)}</select></label>
+      <label for="z-mun">Município<input id="z-mun" list="z-munl" value="${esc(ZF.mun)}" placeholder="${ZF.uf?'Digite o município':'Escolha a UF'}" ${ZF.uf?'':'disabled'} autocomplete="off"><datalist id="z-munl">${muns.map(m=>`<option value="${esc(m)}">`).join('')}</datalist></label>
+      ${base.length?`<label for="z-solo">Solo<select id="z-solo"><option value="">Todos</option>${opts(solos,ZF.solo,x=>SOLOS[x]||('Solo '+x))}</select></label>
+      <label for="z-grupo">Grupo / ciclo<select id="z-grupo"><option value="">Todos</option>${opts(grupos,ZF.grupo,x=>CICLOS[x]||('Ciclo '+x))}</select></label>
+      ${manejos.length>1?`<label for="z-man">Manejo<select id="z-man">${opts(manejos,ZF.manejo,x=>MANEJOS[x]||x)}</select></label>`:''}
+      ${nms.length>1?`<label for="z-nm">Nível de manejo<select id="z-nm"><option value="">Todos</option>${opts(nms,ZF.nm,x=>'NM'+x)}</select></label>`:''}`:''}
+    </div>
+  </div>
+  ${ZF.cult&&/soja/i.test(ZF.cult)?(()=>{const g=GMR_UF[ZF.uf];const f=x=>String(x).replace('.',',');
+    return `<div class="box calc"><h3>Minha cultivar está em qual grupo?</h3>${cultBox()}</div>${posUploadBox()}
+    <details class="box zad"${ZF.cultivar?'':' open'}><summary><b>O que são Grupo I, II e III na soja?</b></summary>
+    <p style="margin:0">São os <b>grupos de ciclo</b> do ZARC. Cada cultivar entra em um grupo conforme o seu <b>grupo de maturação relativa (GMR)</b>, informado pela empresa de sementes. As faixas dependem da <b>macrorregião sojícola</b> e são definidas na portaria de cada estado. Grupo I reúne as cultivares de ciclo mais curto, e Grupo III as de ciclo mais longo.</p>
+    ${g?`<div class="tablewrap"><table class="ctab"><thead><tr><th>${esc(ZF.uf)}</th><th>Grupo I</th><th>Grupo II</th><th>Grupo III</th></tr></thead><tbody>
+      ${g.m.map(([m,a,b])=>`<tr><td><b>Macrorregião ${m}</b></td><td>GMR até ${f(a)}</td><td>GMR ${f(a)} a ${f(b)}</td><td>GMR a partir de ${f(b)}</td></tr>`).join('')}</tbody></table></div>
+      <p class="muted" style="margin:0">Fonte: Portaria SPA/MAPA nº ${g.p}/2026 (soja ${esc(ZF.uf)}, safra 2026/2027). ${g.m.length>1?'O estado tem mais de uma macrorregião: a portaria traz a lista de cultivares de cada grupo por macrorregião. ':''}${g.sem3?'Nesta portaria nenhuma cultivar se enquadrou no Grupo III. ':''}Os limites exatos (se o valor da divisa entra no grupo de cima ou de baixo) estão na portaria.</p>`
+      :'<p class="muted" style="margin:0">Escolha o estado para ver as faixas de GMR de cada grupo.</p>'}
+  </details>`})():''}
+  ${ZF.cult&&ZF.mun&&sel.some(r=>r[4]>0)?`<details class="box zad"><summary><b>O que é NM1 a NM4 (nível de manejo)?</b></summary>
+    <p style="margin:0">É o <b>ZARC por níveis de manejo</b>: quanto melhor o manejo do solo (fertilidade, palhada, perfil sem compactação), mais fundo a raiz explora e menor o risco por falta de água.</p>
+    <div class="tablewrap"><table class="ctab"><thead><tr><th>Nível</th><th>Profundidade de raiz considerada</th><th>Situação</th></tr></thead><tbody>
+      <tr><td><b>NM1</b></td><td>40 cm</td><td>Manejo inadequado, solo degradado; maior risco</td></tr>
+      <tr><td><b>NM2</b></td><td>60 cm</td><td>Referência do ZARC tradicional</td></tr>
+      <tr><td><b>NM3</b></td><td>80 cm</td><td>Manejo melhorado do solo</td></tr>
+      <tr><td><b>NM4</b></td><td>100 cm</td><td>Melhor nível de manejo; menor risco</td></tr></tbody></table></div>
+    <p class="muted" style="margin:0">O nível do talhão é definido por indicadores de manejo do solo (IN SPA/MAPA nº 2/2025). Solos rasos (menos de 50 cm úteis) ficam limitados ao NM1.</p></details>`:''}
+  ${ZF.cult&&ZF.uf&&ZF.mun?(sel.length?`<div class="zleg"><span class="z2">20%</span><span class="z3">30%</span><span class="z4">40%</span><span class="z0">Fora do zoneamento</span></div>
+    ${sel.sort((a,b)=>a[2]-b[2]||a[1]-b[1]||a[4]-b[4]).map(r=>{const d=ZARC.PAT[r[7]];const js=janelas(d);
+      return `<div class="box zcard"><div class="zhead"><b>${esc(SOLOS[r[2]]||'Solo '+r[2])} · ${esc(CICLOS[r[1]]||'Ciclo '+r[1])}</b><span class="muted">${esc(MANEJOS[r[3]]||'')}${r[4]?' · NM'+r[4]:''}${r[5]?' · clima '+r[5]:''}</span></div>
+      <div class="zcal" role="img" aria-label="Calendário de risco por decêndio">${MESES.map((m,mi)=>`<div class="zm"><span>${m}</span><div>${[0,1,2].map(p=>{const i=mi*3+p,c=d[i];return `<i class="${c==='0'?'z0':(RISCO[c]||{c:'z9'}).c}" title="${decLabel(i)}: ${c==='0'?'fora do zoneamento':(RISCO[c]||{t:'indicado'}).t}"></i>`}).join('')}</div></div>`).join('')}</div>
+      <p class="zjan">${js.length?js.map(([a,b])=>{const seg=[];for(let i=a;i<=b;i++)seg.push(d[i%36]);const best=seg.includes('2')?'20%':seg.includes('3')?'30%':'40%';return `De <b>${decLabel(a%36).split(' a ')[0]+'/'+MESES[Math.floor((a%36)/3)].toLowerCase()}</b> a <b>${decLabel(b%36).split(' a ')[1]}</b> <span class="muted">(menor risco: ${best})</span>`}).join('<br>'):'Sem janela indicada.'}</p>
+      <p class="muted" style="margin:0">Portaria ${esc((S[r[8]]||'—').replace(/^port(aria)?\.?\s*/i,'nº ').replace(/_de_/,' de ').replace(/_/g,' '))} · safra ${esc(S[r[9]]||'')}</p></div>`}).join('')}`
+    :'<div class="empty"><h2>Sem indicação</h2><p>Este município não tem janela de plantio no zoneamento para a combinação escolhida.</p></div>')
+    :`<p class="muted">Escolha cultura, estado e município para ver a janela de plantio com o risco climático por decêndio.</p>`}
+  ${ZF.cult&&ZF.uf&&ZF.mun&&sel.some(r=>r[2]>=11)?`<details class="box zad" open><summary><b>O que é AD1 a AD6?</b></summary>
+    <p style="margin:0">É a classe de <b>água disponível</b> do solo: quanta água o solo consegue guardar para a planta. Quanto maior o número, mais água o solo retém e menor o risco de perda por veranico.</p>
+    <div class="tablewrap"><table class="ctab"><thead><tr><th>Classe</th><th>Água disponível (mm por cm de solo)</th><th>Água armazenada em 60 cm*</th></tr></thead><tbody>
+      <tr><td><b>AD1</b></td><td>0,34 a 0,46</td><td>≈ 24 mm</td></tr>
+      <tr><td><b>AD2</b></td><td>0,46 a 0,61</td><td>≈ 32 mm</td></tr>
+      <tr><td><b>AD3</b></td><td>0,61 a 0,80</td><td>≈ 42 mm</td></tr>
+      <tr><td><b>AD4</b></td><td>0,80 a 1,06</td><td>≈ 55 mm</td></tr>
+      <tr><td><b>AD5</b></td><td>1,06 a 1,40</td><td>≈ 72 mm</td></tr>
+      <tr><td><b>AD6</b></td><td>1,40 ou mais</td><td>≈ 95 mm</td></tr></tbody></table></div>
+    <p class="muted" style="margin:0"><b>Como saber a classe do seu talhão:</b> ela é calculada pelos teores de <b>areia, silte e argila</b> da análise granulométrica da camada de <b>0 a 40 cm</b>, por uma equação oficial (Instrução Normativa SPA/MAPA nº 1/2022, alterada pela IN nº 2/2022). Em geral, solos mais arenosos ficam nas classes mais baixas. Para seguro e Proagro vale a classe calculada pela análise.</p>
+    <p class="muted" style="margin:0">* Profundidade efetiva de raiz de 60 cm usada na portaria do ZARC da soja; outras culturas podem usar outra profundidade. Solos tipo 1, 2 e 3 (arenoso, médio, argiloso) são a classificação antiga, ainda usada em algumas portarias.</p>
+  </details>`:''}
+  ${canAdmin&&assets&&db?zAdminBox():''}
+  <p class="muted">Fonte: ZARC — Zoneamento Agrícola de Risco Climático (MAPA), Tábua de Risco${zmeta?.atualizadoEm?`, base de ${fmtD(zmeta.atualizadoEm)}`:''}. O risco indica a chance de perda por clima no período; use junto com o posicionamento da cultivar e o seguro/Proagro.</p>`;
+  const save=()=>lsSet('zarcf:v1',ZF);
+  const on=(id,k,reset)=>{const el=$('#'+id);if(!el)return;el.addEventListener(el.tagName==='INPUT'?'change':'change',()=>{ZF[k]=el.value;(reset||[]).forEach(x=>ZF[x]='');save();renderPlantio()})};
+  on('z-cult','cult',['solo','grupo','nm']);
+  const cv=$('#z-cv');if(cv)cv.addEventListener('change',()=>{ZF.cultivar=cv.value;save();renderPlantio()});
+  bindPos();
+  v.querySelectorAll('[data-gsel]').forEach(b=>b.onclick=()=>{ZF.grupo=b.dataset.gsel;save();renderPlantio();document.querySelector('.zleg')?.scrollIntoView({behavior:'smooth'})});on('z-uf','uf',['mun','solo','grupo','nm']);on('z-mun','mun',['solo','grupo','nm']);on('z-solo','solo');on('z-grupo','grupo');on('z-man','manejo');on('z-nm','nm');
+  bindZAdmin();
+}
+function zAdminBox(){return `<div class="box admin"><h3>Atualizar zoneamento (administrador)</h3>
+  <p class="muted" style="margin:0">${zmeta?.assetId?`Base atual de ${fmtD(zmeta.atualizadoEm)}.`:'Nenhuma base carregada.'} Baixe a <a href="https://dados.agricultura.gov.br/dataset/tabua-de-risco-zoneamento-agricola-de-risco-climatico" target="_blank" rel="noopener">Tábua de Risco do ZARC</a> (CSV) no site do MAPA e selecione aqui. O app guarda só soja, milho e algodão.</p>
+  <input type="file" id="zFile" accept=".csv,text/csv"><div class="progress" hidden id="zprog"><i></i></div><p class="muted" id="zMsg"></p>
+  <div class="btnrow"><button class="btn" id="zPub" hidden>Publicar zoneamento</button></div></div>`}
+function bindZAdmin(){
+  const inp=$('#zFile');if(!inp)return;
+  inp.onchange=()=>{const f=inp.files[0];if(!f)return;const msg=$('#zMsg'),prog=$('#zprog'),bar=prog.querySelector('i');prog.hidden=false;msg.textContent='Processando '+f.name+'…';
+    const w=new Worker(URL.createObjectURL(new Blob([ZWORKER],{type:'text/javascript'})));
+    w.onmessage=e=>{const d=e.data;if(d.prog!==undefined){bar.style.width=(d.prog*100).toFixed(1)+'%';return}
+      if(d.error){msg.textContent=d.error;prog.hidden=true;w.terminate();return}
+      if(d.done){w.terminate();bar.style.width='100%';zPending=d.done;const nm=Object.keys(d.done.MUN).length;
+        msg.innerHTML=`Pronto: ${fmtN(d.done.R.length)} combinações em ${fmtN(nm)} municípios (de ${fmtN(d.done.linhas)} linhas). Valores encontrados nos decêndios: ${esc(d.vals.map(([k,n])=>`"${k}"`).join(' '))}.`;
+        const b=$('#zPub');b.hidden=false;b.onclick=publishZarc}};
+    w.postMessage(f)};
+}
+async function publishZarc(){
+  const msg=$('#zMsg'),b=$('#zPub');if(!zPending)return;b.disabled=true;msg.textContent='Enviando…';
+  try{const text=JSON.stringify(zPending);const up=await assets.upload(new Blob([text],{type:'application/json'}),{type:'application/json'});
+    const m={assetId:up.id,atualizadoEm:zPending.gerado,combinacoes:zPending.R.length,bytes:up.sizeBytes};await db.doc('config/zarc').set(m);
+    await IDB.set('zarc',{assetId:up.id,data:zPending});zmeta=m;ZARC=zPending;zPending=null;renderPlantio();
+  }catch(e){msg.textContent='Não foi possível publicar ('+(e.code||e.message||e)+').';b.disabled=false}
+}
+
+/* ---------- calda: calibração + montagem do tanque ---------- */
+const CK='calda:v1';
+let CAL={vel:'',esp:'50',bico:'',alvo:'',vazao:'',tanque:'',area:'',itens:[]};
+try{const s=JSON.parse(localStorage.getItem(CK)||'null');if(s)CAL={...CAL,...s}}catch(e){}
+const saveCal=()=>{try{localStorage.setItem(CK,JSON.stringify(CAL))}catch(e){}};
+// ordem de mistura: regra geral por formulação
+const ORDEM=[
+  {g:'Pós e grânulos (WP, WG, SG, SP, DF)',re:/^(WP|WG|WDG|SG|SP|DF|GD|WS)$/},
+  {g:'Suspensões (SC, CS, SE, FS, ZC)',re:/^(SC|CS|SE|FS|ZC|SS)$/},
+  {g:'Emulsões e dispersões em óleo (EC, EW, OD, ME, DC)',re:/^(EC|EW|OD|ME|DC|EO|OL)$/},
+  {g:'Soluções (SL, LS)',re:/^(SL|LS|SC?L|AL)$/},
+  {g:'Fertilizantes foliares',re:/^FERT$/},
+  {g:'Adjuvantes e óleos',re:/^ADJ$/},
+  {g:'Outros / não identificado',re:/.*/}];
+function formCode(it){
+  if(it.tipo==='fert')return 'FERT';
+  if(it.tipo==='adj')return 'ADJ';
+  const c=String(it.form||'').split(' - ')[0].trim().toUpperCase();return c||'?';
+}
+function grupoOrdem(it){const c=formCode(it);return ORDEM.findIndex(o=>o.re.test(c))}
+function pickResults(qs){
+  const t=norm(qs).split(/\s+/).filter(Boolean);if(!t.length)return [];
+  const out=[];
+  for(const p of P){if(t.every(x=>p.key.includes(x))){out.push({tipo:'def',ref:p.reg,nome:p.nome,sub:p.ia.map(x=>x.nome).join(' + '),form:p.form,un:(iaConc(p.ia[0]||{})||{}).u||(/p[oó]|gr[aâ]nul|WG|WP|SP/i.test(p.form)?'kg':'L')});if(out.length>=8)break}}
+  for(const p of FOL){const k=norm([p.nome,p.empresa,p.registro].join(' '));if(t.every(x=>k.includes(x))){out.push({tipo:'fert',ref:'c:'+p._id,nome:p.nome,sub:garTxt(p),form:'',un:/s[oó]lid|gr[aâ]nul|p[oó]/i.test(p.natureza||'')?'kg':'L'});if(out.length>=12)break}}
+  if(out.length<12)for(const p of FP){if(!p.mkey.includes('foliar'))continue;if(t.every(x=>p.key.includes(x))){out.push({tipo:'fert',ref:'f:'+p.reg,nome:p.resumo||p.nome,sub:p.emp+' · Reg. '+p.reg,form:'',un:/SOLID/i.test(p.nat)?'kg':'L'});if(out.length>=16)break}}
+  return out;
+}
+function prefillPreco(it){
+  try{
+    if(it.tipo==='def'){const s=JSON.parse(localStorage.getItem('calcd2:'+it.ref)||'{}');return {preco:s.preco||'',dose:s.dose||'',un:s.un||it.un}}
+    const s=JSON.parse(localStorage.getItem('calc2:'+it.ref)||'{}');return {preco:s.preco||'',dose:s.dose||'',un:s.un||it.un};
+  }catch(e){return {preco:'',dose:'',un:it.un}}
+}
+function calibCalc(){
+  const v=pnum(CAL.vel),e=pnum(CAL.esp),q=pnum(CAL.bico),a=pnum(CAL.alvo);
+  const lha=v>0&&e>0&&q>0?q*60000/(v*e):NaN;
+  const qNec=v>0&&e>0&&a>0?a*v*e/60000:NaN;
+  return {lha,qNec};
+}
+function renderCalda(){
+  const v=$('#view');
+  const {lha,qNec}=calibCalc();
+  const vaz=pnum(CAL.vazao),tq=pnum(CAL.tanque),area=pnum(CAL.area);
+  const haTq=vaz>0&&tq>0?tq/vaz:NaN;
+  const nTq=area>0&&haTq>0?area/haTq:NaN;
+  const itens=CAL.itens.map((it,i)=>({...it,i,d:pnum(it.dose),pr:pnum(it.preco)}));
+  const custoHa=itens.reduce((s,it)=>s+(it.d>0&&it.pr>0?it.d*it.pr:0),0);
+  const semPreco=itens.filter(it=>!(it.pr>0)).length;
+  const ordem=[...itens].sort((a,b)=>grupoOrdem(a)-grupoOrdem(b));
+  v.innerHTML=`
+  <div class="box calc"><h3>Calibração do pulverizador</h3>
+    <div class="cgrid">
+      <label for="k-vel">Velocidade (km/h)<input id="k-vel" inputmode="decimal" placeholder="Ex.: 12" value="${esc(CAL.vel)}"></label>
+      <label for="k-esp">Espaçamento entre bicos (cm)<input id="k-esp" inputmode="decimal" placeholder="Ex.: 50" value="${esc(CAL.esp)}"></label>
+      <label for="k-bico">Vazão por bico (L/min)<input id="k-bico" inputmode="decimal" placeholder="Ex.: 0,8" value="${esc(CAL.bico)}"></label>
+      <label for="k-alvo">Ou: volume desejado (L/ha)<input id="k-alvo" inputmode="decimal" placeholder="Ex.: 100" value="${esc(CAL.alvo)}"></label>
+    </div>
+    <div class="kpis">
+      <div><span>Volume aplicado</span><b>${isFinite(lha)?n2(lha,1)+' L/ha':'—'}</b><small>com a vazão por bico informada</small></div>
+      <div><span>Vazão por bico necessária</span><b>${isFinite(qNec)?n2(qNec,2)+' L/min':'—'}</b><small>para o volume desejado</small></div>
+    </div>
+    ${isFinite(lha)&&!(vaz>0)?`<button class="btn ghost" id="k-usar">Usar ${n2(lha,1)} L/ha na calda</button>`:''}
+    <p class="muted" style="margin:0">Fórmula: L/ha = vazão do bico (L/min) × 60.000 ÷ (velocidade km/h × espaçamento cm). Confira a vazão real coletando cada bico por 1 minuto.</p>
+  </div>
+  <div class="box calc"><h3>Montar a calda</h3>
+    <div class="cgrid">
+      <label for="k-vaz">Volume de calda (L/ha)<input id="k-vaz" inputmode="decimal" placeholder="Ex.: 100" value="${esc(CAL.vazao)}"></label>
+      <label for="k-tq">Capacidade do tanque (L)<input id="k-tq" inputmode="decimal" placeholder="Ex.: 2000" value="${esc(CAL.tanque)}"></label>
+      <label for="k-area">Área a aplicar (ha, opcional)<input id="k-area" inputmode="decimal" placeholder="Ex.: 150" value="${esc(CAL.area)}"></label>
+    </div>
+    <div class="kpis"><div><span>Cada tanque cobre</span><b>${isFinite(haTq)?n2(haTq,1)+' ha':'—'}</b></div>
+      ${isFinite(nTq)?`<div><span>Tanques para ${n2(area,1)} ha</span><b>${n2(nTq,1)}</b><small>${n2(Math.ceil(nTq),0)} cargas</small></div>`:''}
+      <div><span>Custo da calda por ha</span><b>${custoHa>0?brl(custoHa):'—'}</b>${semPreco?`<small>${semPreco} produto${semPreco>1?'s':''} sem preço</small>`:''}</div></div>
+    <div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="k-busca" type="search" placeholder="Adicionar produto: nome, ativo, empresa ou registro" autocomplete="off"></div>
+    <div id="k-res" class="gen"></div>
+    <div class="btnrow"><button class="btn ghost" id="k-adj">+ Adjuvante / óleo</button><button class="btn ghost" id="k-livre">+ Outro produto</button></div>
+    ${itens.length?`<div class="tablewrap"><table class="ctab kit"><thead><tr><th>Produto</th><th>Dose/ha</th><th>Preço por L/kg</th><th>Por tanque</th>${isFinite(nTq)?'<th>Total na área</th>':''}<th></th></tr></thead><tbody>
+      ${itens.map(it=>`<tr><td><b>${esc(it.nome)}</b><br><span class="muted">${esc(it.tipo==='def'?(it.form||''):it.tipo==='fert'?'Fertilizante':it.tipo==='adj'?'Adjuvante':'Outro')}</span> ${itemMoas(it).map(moaPill).join(' ')}</td>
+        <td><span class="gin sm"><input data-k="dose" data-i="${it.i}" inputmode="decimal" value="${esc(it.dose||'')}" aria-label="Dose de ${esc(it.nome)}"><select data-k="un" data-i="${it.i}" aria-label="Unidade"><option ${it.un==='L'?'selected':''}>L</option><option ${it.un==='kg'?'selected':''}>kg</option></select></span></td>
+        <td><input class="sm1" data-k="preco" data-i="${it.i}" inputmode="decimal" value="${esc(it.preco||'')}" placeholder="R$" aria-label="Preço de ${esc(it.nome)}"></td>
+        <td><b>${it.d>0&&isFinite(haTq)?n2(it.d*haTq,2)+' '+it.un:'—'}</b></td>
+        ${isFinite(nTq)?`<td>${it.d>0?n2(it.d*area,1)+' '+it.un:'—'}</td>`:''}
+        <td><button class="xbtn" data-del="${it.i}" aria-label="Remover ${esc(it.nome)}">×</button></td></tr>`).join('')}
+    </tbody></table></div>`:'<p class="muted" style="margin:0">Adicione os produtos da aplicação. Preço e dose já usados nas calculadoras das fichas entram sozinhos.</p>'}
+  </div>
+  ${itens.length?`<div class="box"><h3>Ordem de mistura sugerida</h3>
+    <ol class="steps"><li>Tanque com metade a 2/3 da água, agitador ligado. Corretor de pH ou condicionador de água, se usar.</li>
+    ${ordem.map(it=>`<li><b>${esc(it.nome)}</b> <span class="muted">— ${esc(ORDEM[grupoOrdem(it)].g)}</span></li>`).join('')}
+    <li>Complete com água mantendo a agitação.</li></ol>
+    <p class="note">Regra geral pela formulação. Sempre siga a bula, faça o teste de mistura em pequena escala (pote com água na mesma proporção) e espere cada produto dispersar antes do próximo.</p></div>`:''}
+  <div class="box"><h3>Programa da safra · rotação de modo de ação</h3>
+    <p class="muted" style="margin:0">Salve cada calda como uma aplicação. O app compara os grupos de resistência (FRAC, IRAC, HRAC) entre aplicações e avisa quando o mesmo modo de ação se repete.</p>
+    <div class="btnrow"><input id="k-apnome" class="cfilter" style="flex:1 1 180px;width:auto" placeholder="Nome da aplicação (ex.: R1 - fungicida)" value=""><button class="btn" id="k-salvar" ${itens.length?'':'disabled'}>Salvar calda no programa</button></div>
+    ${CAL.prog&&CAL.prog.length?`${(()=>{const al=progAlerts(CAL.prog);return al.length?`<div class="note">${al.map(a=>`<div>⚠ ${a}</div>`).join('')}</div>`:'<p class="muted" style="margin:0">Nenhuma repetição de modo de ação entre aplicações seguidas.</p>'})()}
+      <ol class="steps prog">${CAL.prog.map((ap,i)=>`<li><b>${esc(ap.nome)}</b> <span class="muted">${esc(ap.data||'')}</span><br>${esc(ap.produtos.join(' + '))}<br>${ap.moas.map(moaPill).join(' ')||'<span class="muted">sem grupo identificado</span>'}${ap.area?` <span class="muted">· ${esc(ap.area)} ha</span>`:''}<br>${ap.aplicada?`<span class="pill">Aplicada em ${esc(ap.aplicada)}</span>`:(ap.itens?`<button class="adminlink" data-papl="${i}">marcar como aplicada (desconta do estoque)</button> · `:'')}<button class="adminlink" data-pdel="${i}">remover</button></li>`).join('')}</ol>`:''}
+    <p class="muted" style="margin:0">Grupo de resistência estimado pelo grupo químico do AGROFIT. Confirme sempre na bula, que traz o grupo oficial.</p>
+  </div>
+  <p class="muted">Os dados da calda ficam salvos neste aparelho.</p>`;
+  const bindNum=(id,k)=>{const el=$('#'+id);el.oninput=()=>{CAL[k]=el.value;saveCal();deb(()=>{renderCalda();const n=$('#'+id);n.focus();n.setSelectionRange(n.value.length,n.value.length)})}};
+  [['k-vel','vel'],['k-esp','esp'],['k-bico','bico'],['k-alvo','alvo'],['k-vaz','vazao'],['k-tq','tanque'],['k-area','area']].forEach(([a,b])=>bindNum(a,b));
+  $('#k-usar')?.addEventListener('click',()=>{CAL.vazao=n2(lha,1);saveCal();renderCalda()});
+  const busca=$('#k-busca'),res=$('#k-res');let found=[];
+  busca.oninput=()=>deb(()=>{found=pickResults(busca.value);res.innerHTML=found.map((r,j)=>`<button data-j="${j}"><b>${esc(r.nome)}</b><span>${esc(r.sub)}</span></button>`).join('')||(busca.value.trim().length>1?'<p class="muted" style="margin:0">Nada encontrado. Use “+ Outro produto”.</p>':'');
+    res.querySelectorAll('button').forEach(b=>b.onclick=()=>{const r=found[+b.dataset.j];const pf=prefillPreco(r);CAL.itens.push({...r,dose:pf.dose,preco:pf.preco,un:pf.un});saveCal();renderCalda()})});
+  const addLivre=(tipo,nome)=>{CAL.itens.push({tipo,ref:'',nome,form:'',un:'L',dose:'',preco:''});saveCal();renderCalda()};
+  $('#k-adj').onclick=()=>addLivre('adj','Adjuvante');
+  $('#k-livre').onclick=()=>addLivre('livre','Outro produto');
+  v.querySelectorAll('.kit [data-k]').forEach(el=>{const h=()=>{CAL.itens[+el.dataset.i][el.dataset.k]=el.value;saveCal();deb(()=>{renderCalda();const n=document.querySelector(`.kit [data-k="${el.dataset.k}"][data-i="${el.dataset.i}"]`);if(n&&n.tagName==='INPUT'){n.focus();n.setSelectionRange(n.value.length,n.value.length)}})};el.addEventListener(el.tagName==='SELECT'?'change':'input',h)});
+  v.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{CAL.itens.splice(+b.dataset.del,1);saveCal();renderCalda()});
+  $('#k-salvar')?.addEventListener('click',()=>{if(!CAL.itens.length)return;CAL.prog=CAL.prog||[];const moas=new Map();CAL.itens.forEach(it=>itemMoas(it).forEach(m=>moas.set(m.key,m)));
+    CAL.prog.push({nome:($('#k-apnome').value.trim()||('Aplicação '+(CAL.prog.length+1))),data:new Date().toLocaleDateString('pt-BR'),produtos:CAL.itens.map(it=>it.nome),moas:[...moas.values()],area:CAL.area,itens:CAL.itens.map(it=>({key:itemKey(it),nome:it.nome,dose:it.dose,un:it.un}))});saveCal();renderCalda()});
+  v.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=()=>{CAL.prog.splice(+b.dataset.pdel,1);saveCal();renderCalda()});
+  v.querySelectorAll('[data-papl]').forEach(b=>b.onclick=()=>{aplicar(+b.dataset.papl);renderCalda()});
+}
+
+function render(){
+  $('#searchArea').hidden=tab!=='def';$('#filterArea').hidden=tab!=='def';
+  tab==='def'?renderDef():tab==='fol'?renderFol():tab==='cal'?renderCalda():tab==='plan'?renderPlantio():renderMeus();
+}
+
+/* ---------- ficha ---------- */
+function openProduct(i){
+  const p=P.find(x=>x.i===i);if(!p)return;
+  const S=DB.S;
+  const cId=F.cult?cultIdx.get(norm(F.cult).trim()):undefined;
+  const pr=prayIds(F.praga);
+  const cults=p.raw.u.map(([c,ps])=>({c,nome:S[c],ps:ps.map(x=>({id:x,sci:S[DB.PR[x][0]],com:S[DB.PR[x][1]]})).sort((a,b)=>a.com.localeCompare(b.com,'pt'))})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt'));
+  const same=P.filter(x=>x!==p&&x.compKey===p.compKey);
+  const sameIA=P.filter(x=>x!==p&&x.iaKey===p.iaKey&&x.compKey!==p.compKey);
+  const q=encodeURIComponent(`bula ${p.nome} registro MAPA ${p.reg} pdf`);
+  const genBtn=x=>`<button data-i="${x.i}"><b>${esc(x.nome)}</b><span>${esc(x.tit)}<br>${esc(x.ia.map(a=>a.conc).filter(Boolean).join(' + '))} · ${esc(x.form.split(' - ')[0])}</span></button>`;
+  const sh=$('#sheet');
+  sh.innerHTML=`<div class="bar"><div class="wrap"><button class="back" id="back">← Voltar</button><span class="t">${esc(p.nome)}</span></div></div>
+  <div class="wrap content">
+    <div class="hero">
+      <div class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${p.bio?'<span class="pill bio">Biológico</span>':''}<span class="pill">${esc(p.classe)}</span>${p.org==='SIM'?'<span class="pill org">Uso em orgânicos</span>':''}</div>
+      <h2>${esc(p.nome)}</h2>
+      ${p.aka.length?`<div class="aka">Também registrado como: ${esc(p.aka.join(' · '))}</div>`:''}
+      <div class="toxband ${p.tox.k}">Classe toxicológica: ${esc(p.tox.label)}</div>
+    </div>
+    <div class="box"><h3>Composição</h3>
+      <ul class="ialist">${p.ia.map(x=>`<li><span class="n">${esc(x.nome)}${x.grupo?`<small>${esc(x.grupo)}</small>`:''}${x.moa?`<small>Grupo de resistência: ${moaPill(x.moa)} ${esc(x.moa.label)}</small>`:''}</span><span class="c">${esc(x.conc||'—')}</span></li>`).join('')}</ul>
+      <dl class="kv"><dt>Formulação</dt><dd>${esc(p.form)}</dd><dt>Modo de ação</dt><dd>${esc(p.modo||'Não informado no cadastro')}</dd></dl>
+    </div>
+    ${calcDefBox(p)}
+    <div class="box"><h3>Registro</h3>
+      <dl class="kv"><dt>Nº registro MAPA</dt><dd style="font-family:var(--f-mono)">${esc(p.reg)}</dd><dt>Titular</dt><dd>${esc(p.tit)}</dd><dt>Classe ambiental</dt><dd>${esc(p.amb)}</dd><dt>Orgânicos</dt><dd>${p.org==='SIM'?'Permitido':p.org==='NAO'?'Não':'Não se aplica / outros'}</dd></dl>
+      <div class="btnrow"><a class="btn" href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Abrir bula (PDF)</a><a class="btn ghost" href="${AGROFIT}" target="_blank" rel="noopener">Conferir no AGROFIT</a></div>
+    </div>
+    <div class="box"><h3>Culturas e alvos registrados · ${cults.length}</h3>
+      ${cults.length>6?'<input class="cfilter" id="cf" placeholder="Filtrar cultura ou alvo">':''}
+      <div id="cultList">${cults.map(c=>`<details class="cult" data-s="${esc(norm(c.nome+' '+c.ps.map(x=>x.com+' '+x.sci).join(' ')))}" ${(cId!==undefined&&c.c===cId)||cults.length===1?'open':''}><summary>${esc(c.nome)}<span>${c.ps.length} alvo${c.ps.length>1?'s':''}</span></summary><ul>${c.ps.map(x=>`<li class="${pr&&pr.has(x.id)?'hit':''}">${esc(x.com||x.sci)}<i>${esc(x.sci)}</i></li>`).join('')}</ul></details>`).join('')}</div>
+      <p class="note">Doses, intervalo de segurança e número de aplicações estão na bula. Eles não fazem parte dos dados abertos do AGROFIT.</p>
+    </div>
+    <div class="box"><h3>Mesma composição · ${same.length}</h3>
+      ${same.length?`<p class="muted">Mesmos ingredientes ativos na mesma concentração. Confira formulação e registro para a cultura antes de trocar.</p><div class="gen">${same.map(genBtn).join('')}</div>`:'<p class="muted">Nenhum outro produto com exatamente esta composição.</p>'}
+    </div>
+    ${sameIA.length?`<div class="box"><h3>Mesmo ingrediente ativo, outra concentração · ${sameIA.length}</h3><div class="gen">${sameIA.slice(0,40).map(genBtn).join('')}</div>${sameIA.length>40?`<p class="muted">Mostrando 40 de ${sameIA.length}.</p>`:''}</div>`:''}
+  </div>`;
+  sh.hidden=false;sh.scrollTop=0;document.body.style.overflow='hidden';
+  $('#back').onclick=closeSheet;
+  sh.querySelectorAll('.gen button').forEach(b=>b.onclick=()=>openProduct(+b.dataset.i));
+  bindCalcDef(p);addStar('d:'+p.reg,p.nome,p.ia.map(x=>x.nome).join(' + '));
+  const cf=$('#cf');if(cf)cf.oninput=()=>{const n=norm(cf.value);sh.querySelectorAll('.cult').forEach(d=>{d.hidden=n&&!d.dataset.s.includes(n);if(n&&!d.hidden)d.open=true})};
+}
+function closeSheet(){$('#sheet').hidden=true;document.body.style.overflow='';if(tab==='meus')renderMeus()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet()});
+
+/* ---------- eventos ---------- */
+$('#view').addEventListener('click',e=>{const c=e.target.closest('.card');if(c)openProduct(+c.dataset.i)});
+let tmr;const deb=fn=>{clearTimeout(tmr);tmr=setTimeout(fn,180)};
+$('#q').addEventListener('input',e=>{F.q=e.target.value;shown=60;deb(renderDef)});
+$('#fCult').addEventListener('input',e=>{F.cult=e.target.value;shown=60;deb(renderDef)});
+$('#fPraga').addEventListener('input',e=>{F.praga=e.target.value;shown=60;deb(renderDef)});
+$('#fGrupo').addEventListener('change',e=>{F.grupo=e.target.value;shown=60;renderDef()});
+document.querySelectorAll('[data-tipo]').forEach(b=>b.addEventListener('click',()=>{F.tipo=b.dataset.tipo;shown=60;syncInputs();renderDef()}));
+function syncInputs(){$('#q').value=F.q;$('#fCult').value=F.cult;$('#fPraga').value=F.praga;$('#fGrupo').value=F.grupo;document.querySelectorAll('[data-tipo]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tipo===F.tipo))}
+$('#ftBtn').addEventListener('click',()=>{const b=$('#selBox');b.hidden=!b.hidden;$('#ftBtn').setAttribute('aria-expanded',!b.hidden)});
+function ftLabel(){const n=[F.grupo,F.cult,F.praga].filter(x=>x&&x.trim()).length;$('#ftBtn').textContent=n?`Filtros · ${n}`:'Filtros'}
+['def','fol','cal','plan','meus'].forEach(t=>$('#tab-'+t).addEventListener('click',()=>{if(!$('#sheet').hidden){$('#sheet').hidden=true;document.body.style.overflow=''}tab=t;window.scrollTo(0,0);['def','fol','cal','plan','meus'].forEach(x=>$('#tab-'+x).setAttribute('aria-selected',x===t));render()}));
+
+/* ---------- importação (admin) ---------- */
+const WORKER=`
+self.onmessage=async e=>{try{
+  const file=e.data;const size=file.size;
+  const reader=file.stream().pipeThrough(new TextDecoderStream('utf-8')).getReader();
+  const S=[],SI=new Map();const s=v=>{v=(v||'').trim().replace(/\\s+/g,' ');let i=SI.get(v);if(i===undefined){i=S.length;S.push(v);SI.set(v,i)}return i};
+  const PR=[],PRI=new Map();const pr=(a,b)=>{const k=a+'|'+b;let i=PRI.get(k);if(i===undefined){i=PR.length;PR.push([s(a),s(b)]);PRI.set(k,i)}return i};
+  const P=new Map();let idx=null,buf='',carry='',chars=0,n=0,bad=0,repl=0;
+  function parse(l){const row=[];let f='',q=false;for(let i=0;i<l.length;i++){const c=l[i];if(q){if(c==='"'){if(l[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else{if(c==='"'&&f.trim()==='')q=true;else if(c===';'){row.push(f);f=''}else f+=c}}row.push(f);return [row,q]}
+  const need=['NR_REGISTRO','MARCA_COMERCIAL','FORMULACAO','INGREDIENTE_ATIVO','TITULAR_DE_REGISTRO','CLASSE','MODO_DE_ACAO','CULTURA','PRAGA_NOME_CIENTIFICO','PRAGA_NOME_COMUM','CLASSE_TOXICOLOGICA','CLASSE_AMBIENTAL','ORGANICOS','SITUACAO'];
+  function line(l){
+    l=l.replace(/\\r$/,'');if(!l)return;
+    if(!idx){const h=l.replace(/^\\uFEFF/,'').split(';').map(x=>x.trim());idx={};need.forEach(k=>{idx[k]=h.indexOf(k)});const miss=need.filter(k=>idx[k]<0);if(miss.length)throw new Error('Arquivo não parece ser o "Produto Formulado" do AGROFIT. Colunas ausentes: '+miss.join(', '));idx.len=h.length;return}
+    let [r,open]=parse(carry+l);if(open){carry+=l+'\\n';return}carry='';
+    if(r.length<idx.len){bad++;return}
+    const g=k=>r[idx[k]]||'';
+    if(/^false$/i.test(g('SITUACAO').trim()))return;
+    n++;const reg=g('NR_REGISTRO').trim();let p=P.get(reg);
+    if(!p){p={r:reg,m:g('MARCA_COMERCIAL').trim().replace(/\\s+/g,' '),f:s(g('FORMULACAO')),ia:g('INGREDIENTE_ATIVO').trim().replace(/\\s+/g,' '),t:s(g('TITULAR_DE_REGISTRO')),c:s(g('CLASSE')),mo:s(g('MODO_DE_ACAO')),tx:s(g('CLASSE_TOXICOLOGICA')),am:s(g('CLASSE_AMBIENTAL')),o:s(g('ORGANICOS')),u:new Map()};P.set(reg,p)}
+    const cu=s(g('CULTURA'));let set=p.u.get(cu);if(!set){set=new Set();p.u.set(cu,set)}set.add(pr(g('PRAGA_NOME_CIENTIFICO'),g('PRAGA_NOME_COMUM')));
+  }
+  for(;;){const {done,value}=await reader.read();if(done)break;chars+=value.length;
+    for(let k=0;k<value.length;k++)if(value.charCodeAt(k)===65533)repl++;
+    buf+=value;let e2;let st=0;while((e2=buf.indexOf('\\n',st))>=0){line(buf.slice(st,e2));st=e2+1}buf=buf.slice(st);
+    postMessage({prog:Math.min(.99,chars/size)});}
+  if(buf)line(buf);
+  if(repl>1000)throw new Error('O arquivo não está em UTF-8 (talvez tenha sido aberto e salvo no Excel). Baixe de novo direto do site do MAPA e selecione sem abrir.');
+  const out={v:1,fonte:'AGROFIT/MAPA - Produto Formulado',gerado:new Date().toISOString(),linhas:n,S,PR,P:[...P.values()].map(p=>({...p,u:[...p.u].map(([c,set])=>[c,[...set]])}))};
+  postMessage({done:out,bad});
+}catch(err){postMessage({error:String(err.message||err)})}};`;
+let pending=null;
+function bindAdmin(){
+  const inp=$('#csvFile');if(!inp)return;
+  inp.onchange=()=>{
+    const f=inp.files[0];if(!f)return;
+    const msg=$('#adminMsg'),prog=$('#prog'),bar=prog.querySelector('i');
+    prog.hidden=false;bar.style.width='0';$('#pubBtn').hidden=true;msg.textContent='Processando '+f.name+'…';
+    const w=new Worker(URL.createObjectURL(new Blob([WORKER],{type:'text/javascript'})));
+    w.onmessage=e=>{const d=e.data;
+      if(d.prog!==undefined){bar.style.width=(d.prog*100).toFixed(1)+'%';return}
+      if(d.error){msg.textContent=d.error;prog.hidden=true;w.terminate();return}
+      if(d.done){w.terminate();bar.style.width='100%';pending=d.done;
+        msg.textContent=`Pronto: ${fmtN(d.done.P.length)} produtos e ${fmtN(d.done.linhas)} registros de uso. Confira e publique.`;
+        $('#pubBtn').hidden=false;$('#pubBtn').onclick=publishBase;}
+    };
+    w.postMessage(f);
+  };
+}
+async function publishBase(){
+  const msg=$('#adminMsg'),btn=$('#pubBtn');if(!pending)return;
+  btn.disabled=true;msg.textContent='Enviando…';
+  try{
+    const text=JSON.stringify(pending);
+    const up=await assets.upload(new Blob([text],{type:'application/json'}),{type:'application/json'});
+    const m={assetId:up.id,atualizadoEm:pending.gerado,produtos:pending.P.length,bytes:up.sizeBytes};
+    if(DB&&Array.isArray(DB.P)){const nomeDe=p=>p.m.split(';')[0].trim();const antes=new Map(DB.P.map(p=>[p.r,nomeDe(p)])),depois=new Map(pending.P.map(p=>[p.r,nomeDe(p)]));
+      const novos=[...depois].filter(([r])=>!antes.has(r)),saiu=[...antes].filter(([r])=>!depois.has(r));
+      m.mudancas={de:DB.gerado||'',nNovos:novos.length,nRemovidos:saiu.length,novos:novos.slice(0,300),removidos:saiu.slice(0,300)};}
+    await db.doc('config/base').set(m);
+    await IDB.set('base',{assetId:up.id,data:pending});
+    meta=m;DB=pending;enrich(DB);pending=null;
+    msg.textContent='Base publicada.';btn.hidden=true;render();
+  }catch(e){msg.textContent='Não foi possível publicar ('+(e.code||e.message||e)+'). Tente de novo em instantes.';btn.disabled=false}
+}
+
+/* ---------- inicialização ---------- */
+async function loadFromCache(){
+  const c=await IDB.get('base');
+  if(c&&c.data){DB=c.data;meta=meta||{assetId:c.assetId,atualizadoEm:c.data.gerado,produtos:c.data.P.length};enrich(DB);render();return c.assetId}
+  return null;
+}
+async function boot(){
+  render();
+  const cachedId=await loadFromCache();
+  if(!window.claude?.use){await loadStaticBase();startFol();loadFert();loadPosStatic();render();return}
+  try{
+    const [dbns,asns,user]=await Promise.all([claude.use('db'),claude.use('assets'),claude.use('user')]);
+    db=dbns;assets=asns;
+    try{sampleFn=await claude.use('sample');const lim=sampleFn?await sampleFn.limits().catch(()=>null):null;imgLim=lim?.images||null}catch(e){}
+    canAdmin=!!(assets&&db)&&((await user?.canEdit())??false);
+    if(db){
+      const snap=await db.doc('config/base').get();
+      if(snap.exists){
+        meta=snap.data();
+        if(meta.assetId&&meta.assetId!==cachedId){
+          const r=await fetch('/_blob/'+meta.assetId);
+          if(r.ok){DB=await r.json();enrich(DB);await IDB.set('base',{assetId:meta.assetId,data:DB})}
+        }
+      }
+    }
+    startPrecos(user);
+  }catch(e){console.warn('Sem conexão com a base online; usando a cópia salva.',e)}
+  await loadStaticBase();
+  startFol();loadFert();startPos();loadPosStatic();
+  render();
+}
+// base publicada junto com a página: funciona para qualquer pessoa que consiga abrir o app
+async function loadStaticBase(){
+  try{
+    const r=await fetch('data/agrofit.json');if(!r.ok)return;
+    const d=await r.json();
+    if(!DB||(d.gerado&&DB.gerado&&d.gerado>DB.gerado)){DB=d;meta={atualizadoEm:d.gerado,produtos:d.P.length,mudancas:d.mudancas||null};enrich(DB);await IDB.set('base',{assetId:'static:'+d.gerado,data:DB});render()}
+  }catch(e){console.warn(e)}
+}
+boot();
+})();
+</script>
+
+</body></html>

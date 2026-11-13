@@ -1,0 +1,34 @@
+{
+  "name": "safrou",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Safrou — consulta de defensivos, fertilizantes, calda e plantio (ZARC) com dados oficiais do MAPA.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-www.mjs",
+    "update-data": "node scripts/update-data.mjs",
+    "ios:config": "node scripts/ios-config.mjs"
+  },
+  "dependencies": {
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor-community/admob": "^7.0.0",
+    "cordova-plugin-purchase": "^13.11.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0",
+    "@fontsource/inter": "^5.0.0",
+    "@fontsource/sora": "^5.0.0",
+    "@fontsource/jetbrains-mono": "^5.0.0",
+    "plist": "^3.1.0",
+    "ws": "^8.18.0",
+    "playwright": "^1.48.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

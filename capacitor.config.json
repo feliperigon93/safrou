@@ -1,0 +1,11 @@
+{
+  "appId": "app.safrou",
+  "appName": "Safrou",
+  "webDir": "www-build",
+  "ios": { "contentInset": "never", "backgroundColor": "#1E7A3E", "limitsNavigationsToAppBoundDomains": false },
+  "android": { "backgroundColor": "#1E7A3E" },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 900, "backgroundColor": "#1E7A3E", "showSpinner": false },
+    "AdMob": {}
+  }
+}
