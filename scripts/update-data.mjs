@@ -84,10 +84,14 @@ async function sipeagro(){
   }
   log('SIPEAGRO cookies:',[...jar.keys()].join(',')||'(nenhum)');
   const ws=new WebSocket(`wss://${host}/publico/app/${appId}`,{headers:{...UA,Origin:`https://${host}`,...(jar.size?{Cookie:jarStr()}:{})}});
-  ws.on('unexpected-response',(q,res)=>log('SIPEAGRO resposta',res.statusCode,JSON.stringify(res.headers).slice(0,300)));
   let id=0;const pend=new Map();
   ws.on('message',m=>{const d=JSON.parse(m);if(d.id&&pend.has(d.id)){const {res,rej}=pend.get(d.id);pend.delete(d.id);d.error?rej(new Error(JSON.stringify(d.error))):res(d.result)}});
-  await new Promise((res,rej)=>{ws.once('open',res);ws.once('error',rej)});
+  await new Promise((res,rej)=>{
+    const t=setTimeout(()=>{ws.terminate();rej(new Error('tempo esgotado ao conectar'))},30000);
+    ws.once('open',()=>{clearTimeout(t);res()});
+    ws.once('error',e=>{clearTimeout(t);rej(e)});
+    ws.once('unexpected-response',(q,r)=>{clearTimeout(t);log('SIPEAGRO resposta',r.statusCode,JSON.stringify(r.headers).slice(0,300));q.destroy();rej(new Error('servidor recusou: HTTP '+r.statusCode))});
+  });
   const call=(handle,method,params=[])=>new Promise((res,rej)=>{const i=++id;pend.set(i,{res,rej});ws.send(JSON.stringify({jsonrpc:'2.0',id:i,handle,method,params}))});
   try{
     const doc=(await call(-1,'OpenDoc',[appId])).qReturn.qHandle;
