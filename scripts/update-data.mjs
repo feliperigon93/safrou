@@ -74,9 +74,17 @@ async function zarc(){
 async function sipeagro(){
   const host='mapa-indicadores.agricultura.gov.br',appId='76ef621a-8dc4-48de-8fe0-0aa7e5a47181';
   // pega cookie de sessão anônima da área pública
-  const r0=await fetch(`https://${host}/publico/extensions/Fertilizantes/Fertilizantes.html`,{redirect:'manual'});
-  const cookie=(r0.headers.getSetCookie?r0.headers.getSetCookie():[]).map(c=>c.split(';')[0]).join('; ');
-  const ws=new WebSocket(`wss://${host}/publico/app/${appId}`,{headers:{Origin:`https://${host}`,...(cookie?{Cookie:cookie}:{})}});
+  const UA={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36','Accept-Language':'pt-BR,pt;q=0.9'};
+  const jar=new Map();const jarStr=()=>[...jar].map(([k,v])=>k+'='+v).join('; ');
+  let url=`https://${host}/publico/extensions/Fertilizantes/Fertilizantes.html`;
+  for(let i=0;i<8;i++){
+    const r=await fetch(url,{redirect:'manual',headers:{...UA,...(jar.size?{Cookie:jarStr()}:{})}});
+    for(const c of (r.headers.getSetCookie?r.headers.getSetCookie():[])){const kv=c.split(';')[0];const j=kv.indexOf('=');if(j>0)jar.set(kv.slice(0,j).trim(),kv.slice(j+1))}
+    const loc=r.headers.get('location');if(r.status<300||r.status>=400||!loc)break;url=new URL(loc,url).href;
+  }
+  log('SIPEAGRO cookies:',[...jar.keys()].join(',')||'(nenhum)');
+  const ws=new WebSocket(`wss://${host}/publico/app/${appId}`,{headers:{...UA,Origin:`https://${host}`,...(jar.size?{Cookie:jarStr()}:{})}});
+  ws.on('unexpected-response',(q,res)=>log('SIPEAGRO resposta',res.statusCode,JSON.stringify(res.headers).slice(0,300)));
   let id=0;const pend=new Map();
   ws.on('message',m=>{const d=JSON.parse(m);if(d.id&&pend.has(d.id)){const {res,rej}=pend.get(d.id);pend.delete(d.id);d.error?rej(new Error(JSON.stringify(d.error))):res(d.result)}});
   await new Promise((res,rej)=>{ws.once('open',res);ws.once('error',rej)});
