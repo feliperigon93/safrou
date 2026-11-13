@@ -1,0 +1,62 @@
+name: Gerar app iOS (TestFlight)
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Versão que aparece na loja (ex.: 1.0.0)'
+        required: true
+        default: '1.0.0'
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ADMOB_IOS_APP_ID: ${{ secrets.ADMOB_IOS_APP_ID }}
+      ADMOB_IOS_BANNER: ${{ secrets.ADMOB_IOS_BANNER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install --no-audit --no-fund
+      - name: Montar o app web
+        run: node scripts/build-www.mjs
+      - name: Criar projeto iOS
+        run: |
+          npx cap add ios
+          npx @capacitor/assets generate --ios --iconBackgroundColor '#F4B62A' --splashBackgroundColor '#1E7A3E' --splashBackgroundColorDark '#17251B'
+          npx cap sync ios
+          node scripts/ios-config.mjs
+      - name: Versão e número da build
+        working-directory: ios/App
+        run: |
+          xcrun agvtool new-marketing-version "${{ github.event.inputs.versao }}"
+          xcrun agvtool new-version -all "${{ github.run_number }}"
+      - name: Chave da App Store Connect
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.ASC_KEY_P8_BASE64 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+      - name: Compilar e assinar
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} CODE_SIGN_STYLE=Automatic \
+            PRODUCT_BUNDLE_IDENTIFIER=app.safrou TARGETED_DEVICE_FAMILY=1 archive
+      - name: Enviar para a App Store Connect (TestFlight)
+        run: |
+          cat > ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}
