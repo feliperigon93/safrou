@@ -150,7 +150,12 @@ ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--ink)}
 .cgrid label{display:grid;gap:3px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .cgrid input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:16px;color:var(--ink);text-transform:none;letter-spacing:0;font-weight:400}
 .cgrid .gin input{border:0;background:none}
-.tablewrap{overflow-x:auto}
+.tablewrap{overflow-x:auto;min-width:0;max-width:100%}
+.box>*{min-width:0}
+.zad table{width:100%}
+details.box{display:block}
+details.box>*+*{margin-top:10px}
+.zad .ctab td,.zad .ctab th,.zad .ctab td:not(:first-child){white-space:normal;overflow-wrap:break-word;font-size:13.5px;padding-inline:4px}
 .ctab{width:100%;border-collapse:collapse;font-size:14.5px;font-variant-numeric:tabular-nums}
 .ctab th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 .ctab td{padding:7px 8px;border-bottom:1px dashed var(--line)}
