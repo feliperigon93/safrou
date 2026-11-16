@@ -3,6 +3,7 @@ import fs from 'node:fs';import plist from 'plist';
 const f='ios/App/App/Info.plist';const p=plist.parse(fs.readFileSync(f,'utf8'));
 p.CFBundleDisplayName='Safrou';
 p.GADApplicationIdentifier=process.env.ADMOB_IOS_APP_ID||'ca-app-pub-3940256099942544~1458002511'; // ID de teste se não houver
+p.NSLocationWhenInUseUsageDescription='O Safrou usa sua localização só para mostrar a previsão de vento, Delta T e chuva do seu local. A localização não é guardada nem enviada para nós.';
 p.NSUserTrackingUsageDescription='Usamos esta permissão só para mostrar anúncios mais relevantes. O app funciona normalmente se você não permitir.';
 p.ITSAppUsesNonExemptEncryption=false;
 p.UIRequiresFullScreen=false;

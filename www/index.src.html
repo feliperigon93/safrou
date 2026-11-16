@@ -271,7 +271,7 @@ header.top a{color:#fff}
 <header class="top">
   <div class="wrap">
     <div class="brandrow">
-      <div class="brand"><svg class="logo" width="30" height="30" viewBox="0 0 180 180" aria-hidden="true"><rect width="180" height="180" rx="40" fill="#F4B62A"/><rect x="80" y="62" width="20" height="62" rx="10" fill="#17251B"/><path d="M90 70C70 67 56 54 53 32C75 32 90 47 90 70Z" fill="#1E7A3E"/><path d="M90 62C96 38 113 24 130 21C130 45 112 60 90 62Z" fill="#1E7A3E"/><circle cx="90" cy="148" r="14" fill="#17251B"/></svg><h1>safrou</h1></div><button class="chip semads" id="semAds" hidden>Sem anúncios</button>
+      <div class="brand"><svg class="logo" width="30" height="30" viewBox="0 0 180 180" aria-hidden="true"><rect width="180" height="180" rx="40" fill="#F4B62A"/><rect x="80" y="62" width="20" height="62" rx="10" fill="#17251B"/><path d="M90 70C70 67 56 54 53 32C75 32 90 47 90 70Z" fill="#1E7A3E"/><path d="M90 62C96 38 113 24 130 21C130 45 112 60 90 62Z" fill="#1E7A3E"/><circle cx="90" cy="148" r="14" fill="#17251B"/></svg><h1>safrou</h1></div><button class="chip semads" id="semAds" hidden>Seja Pro</button>
     </div>
     <div id="searchArea" class="search">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -928,6 +928,7 @@ function aplicar(i){
   ap.aplicada=new Date().toLocaleDateString('pt-BR');saveEst();saveCal();
 }
 function renderMeus(){
+  if(window.SAFPRO&&SAFPRO.meusSub()!=='fav'){SAFPRO.renderMeusSub();return}
   const v=$('#view');
   const keys=Object.keys(FAV).sort((a,b)=>String(FAV[a].nome).localeCompare(String(FAV[b].nome),'pt'));
   const need=progNeeds();
@@ -939,7 +940,7 @@ function renderMeus(){
     return {k,m,un,q,min,val,low,e,gone}});
   const compras=[...need].map(([k,n])=>{const e=EST[k];const tem=e&&(e.un||n.un)===n.un?pnum(e.qtd)||0:0;return {...n,k,tem,falta:Math.max(0,n.q-tem)}}).filter(x=>x.q>0);
   const faltando=compras.filter(x=>x.falta>0);
-  v.innerHTML=`
+  v.innerHTML=`${window.SAFPRO?SAFPRO.meusSeg():''}
   ${window.bncProCard?window.bncProCard():''}
   <div class="kpis"><div><span>Favoritos</span><b>${keys.length}</b></div>
     <div><span>Valor em estoque</span><b>${valor>0?brl(valor):'—'}</b>${semPreco?`<small>${semPreco} sem preço</small>`:''}</div>
@@ -962,7 +963,7 @@ function renderMeus(){
     </div>`).join('')}</div>`
   :`<div class="empty"><h2>Nenhum favorito ainda</h2><p>Abra a ficha de um defensivo ou fertilizante e toque em <b>☆ Favoritar</b>. Os produtos que você usa ficam aqui, com o estoque do barracão, e funcionam sem internet.</p></div>`}
   <p class="muted">O valor usa o preço por L/kg que você digitou na calculadora de cada ficha. Favoritos e estoque ficam salvos neste aparelho.</p>`;
-  window.bncProBind&&window.bncProBind();
+  window.bncProBind&&window.bncProBind();window.SAFPRO&&SAFPRO.meusSegBind();
   v.querySelectorAll('.mopen').forEach(b=>b.onclick=()=>{const m=favMeta(b.dataset.k);if(m&&m.open)m.open()});
   v.querySelectorAll('[data-unfav]').forEach(b=>b.onclick=()=>{delete FAV[b.dataset.unfav];saveFav();renderMeus()});
   v.querySelectorAll('[data-e]').forEach(el=>{const h=()=>{const k=el.dataset.k;EST[k]=EST[k]||{};EST[k][el.dataset.e]=el.value;saveEst();deb(()=>{renderMeus();const n=document.querySelector(`[data-e="${el.dataset.e}"][data-k="${CSS.escape(k)}"]`);if(n&&n.tagName==='INPUT'){n.focus();n.setSelectionRange(n.value.length,n.value.length)}})};el.addEventListener(el.tagName==='SELECT'?'change':'input',h)});
@@ -1319,7 +1320,7 @@ function renderCalda(){
   const custoHa=itens.reduce((s,it)=>s+(it.d>0&&it.pr>0?it.d*it.pr:0),0);
   const semPreco=itens.filter(it=>!(it.pr>0)).length;
   const ordem=[...itens].sort((a,b)=>grupoOrdem(a)-grupoOrdem(b));
-  v.innerHTML=`
+  v.innerHTML=`${window.SAFPRO?SAFPRO.caldaTop():''}
   <div class="box calc"><h3>Calibração do pulverizador</h3>
     <div class="cgrid">
       <label for="k-vel">Velocidade (km/h)<input id="k-vel" inputmode="decimal" placeholder="Ex.: 12" value="${esc(CAL.vel)}"></label>
@@ -1360,7 +1361,7 @@ function renderCalda(){
     <ol class="steps"><li>Tanque com metade a 2/3 da água, agitador ligado. Corretor de pH ou condicionador de água, se usar.</li>
     ${ordem.map(it=>`<li><b>${esc(it.nome)}</b> <span class="muted">— ${esc(ORDEM[grupoOrdem(it)].g)}</span></li>`).join('')}
     <li>Complete com água mantendo a agitação.</li></ol>
-    <p class="note">Regra geral pela formulação. Sempre siga a bula, faça o teste de mistura em pequena escala (pote com água na mesma proporção) e espere cada produto dispersar antes do próximo.</p></div>`:''}
+    <p class="note">Regra geral pela formulação. Sempre siga a bula, faça o teste de mistura em pequena escala (pote com água na mesma proporção) e espere cada produto dispersar antes do próximo.</p>${window.SAFPRO?SAFPRO.caldaRecBtn():''}</div>`:''}
   <div class="box"><h3>Programa da safra · rotação de modo de ação</h3>
     <p class="muted" style="margin:0">Salve cada calda como uma aplicação. O app compara os grupos de resistência (FRAC, IRAC, HRAC) entre aplicações e avisa quando o mesmo modo de ação se repete.</p>
     <div class="btnrow"><input id="k-apnome" class="cfilter" style="flex:1 1 180px;width:auto" placeholder="Nome da aplicação (ex.: R1 - fungicida)" value=""><button class="btn" id="k-salvar" ${itens.length?'':'disabled'}>Salvar calda no programa</button></div>
@@ -1384,6 +1385,7 @@ function renderCalda(){
     CAL.prog.push({nome:($('#k-apnome').value.trim()||('Aplicação '+(CAL.prog.length+1))),data:new Date().toLocaleDateString('pt-BR'),produtos:CAL.itens.map(it=>it.nome),moas:[...moas.values()],area:CAL.area,itens:CAL.itens.map(it=>({key:itemKey(it),nome:it.nome,dose:it.dose,un:it.un}))});saveCal();renderCalda()});
   v.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=()=>{CAL.prog.splice(+b.dataset.pdel,1);saveCal();renderCalda()});
   v.querySelectorAll('[data-papl]').forEach(b=>b.onclick=()=>{aplicar(+b.dataset.papl);renderCalda()});
+  window.SAFPRO&&SAFPRO.caldaBind();
 }
 
 function render(){
@@ -1556,8 +1558,12 @@ async function loadStaticBase(){
     if(!DB||(d.gerado&&DB.gerado&&d.gerado>DB.gerado)){DB=d;meta={atualizadoEm:d.gerado,produtos:d.P.length,mudancas:d.mudancas||null};enrich(DB);await IDB.set('base',{assetId:'static:'+d.gerado,data:DB});render()}
   }catch(e){console.warn(e)}
 }
+window.SAF={get P(){return P},get FP(){return FP},get FOL(){return FOL},get CAL(){return CAL},get tab(){return tab},
+  pickResults,itemMoas,moaPill,moaOf,esc,norm,pnum,n2,brl,ORDEM,grupoOrdem,formCode,calibCalc,prefillPreco,itemKey,openProduct,lsGet,lsSet,render,
+  goTab:t=>{const b=document.getElementById('tab-'+t);if(b)b.click()}};
 boot();
 })();
 </script>
+<script src="pro.js"></script>
 
 </body></html>

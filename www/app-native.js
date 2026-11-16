@@ -1,7 +1,8 @@
 /* Safrou — camada do app nativo (iOS/Android via Capacitor)
    1) Atualização das bases: compara os arquivos que vêm dentro do app com os publicados
       no servidor (GitHub Pages) e usa o mais novo, guardando no aparelho.
-   2) Anúncio (AdMob): banner no rodapé, com o pedido de rastreamento exigido pela Apple. */
+   2) Anúncio (AdMob): banner no rodapé, com o pedido de rastreamento exigido pela Apple.
+   3) Safrou Pro: assinatura pelo RevenueCat. */
 (function(){
   const REMOTE='__REMOTE_DATA__'; // trocado no build, ex.: https://usuario.github.io/safrou/data/
   const ADS={iosBanner:'__ADMOB_IOS_BANNER__',androidBanner:'__ADMOB_ANDROID_BANNER__'};
@@ -34,7 +35,7 @@
   document.addEventListener('DOMContentLoaded',async()=>{
     const Cap=window.Capacitor;const slot=document.getElementById('adSlot');
     const AdMob=Cap&&Cap.Plugins&&Cap.Plugins.AdMob;
-    const pro=(()=>{try{return localStorage.getItem('bnc:pro')==='1'}catch(e){return false}})();
+    const pro=window.SafBilling?window.SafBilling.isPro():false;
     if(!AdMob||pro){if(slot)slot.closest('.ad').hidden=true;document.body.style.paddingBottom='calc(66px + env(safe-area-inset-bottom,0px))';return}
     try{
       if(slot)slot.style.border='0';
@@ -50,15 +51,33 @@
   document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="http"]');if(!a)return;const Br=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Browser;if(Br){e.preventDefault();Br.open({url:a.href})}},true);
 })();
 
-/* ---------- Compra "Sem anúncios" (compra única, não consumível) ---------- */
+/* ---------- Safrou Pro: assinatura (RevenueCat) ----------
+   Entitlement "pro" no RevenueCat; pacotes mensal e anual na oferta atual.
+   A situação fica guardada no aparelho para funcionar offline até a data de expiração. */
 (function(){
-  const PRODUTO={ios:'app.safrou.semanuncios',android:'semanuncios'};
-  const KEY='bnc:pro';
-  const isPro=()=>{try{return localStorage.getItem(KEY)==='1'}catch(e){return false}};
-  const setPro=v=>{try{localStorage.setItem(KEY,v?'1':'0')}catch(e){}};
-  window.bncIsPro=isPro;
-  let produto=null,status='',storeOk=false;
+  const RC_KEY='__RC_IOS_KEY__'; // trocado no build pelo segredo REVENUECAT_IOS_KEY
+  const ENT='pro';
+  const LS='saf:pro:v1';
   const plat=()=>window.Capacitor&&window.Capacitor.getPlatform&&window.Capacitor.getPlatform();
+  const native=()=>{const p=plat();return p==='ios'||p==='android'};
+  const RC=()=>window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Purchases;
+  const read=()=>{try{return JSON.parse(localStorage.getItem(LS)||'null')}catch(e){return null}};
+  const write=v=>{try{localStorage.setItem(LS,JSON.stringify(v))}catch(e){}};
+  const st={ready:false,available:false,packages:{},err:'',busy:false};
+  function cachedPro(){
+    if(!native()){try{if(localStorage.getItem('saf:dev-pro')==='1')return true}catch(e){}}
+    const c=read();if(!c||!c.pro)return false;
+    if(!c.until)return true; // sem data = vitalício / não expira
+    return Date.now()<new Date(c.until).getTime()+3*864e5; // 3 dias de folga offline
+  }
+  function applyInfo(r){
+    const ci=r&&r.customerInfo?r.customerInfo:r;if(!ci||!ci.entitlements)return;
+    const e=ci.entitlements.active&&ci.entitlements.active[ENT];
+    const was=cachedPro();
+    write(e?{pro:true,until:e.expirationDate||null,produto:e.productIdentifier||'',trial:e.periodType==='TRIAL',checado:new Date().toISOString()}:{pro:false,checado:new Date().toISOString()});
+    if(was!==cachedPro())window.dispatchEvent(new Event('saf-pro-change'));
+    if(cachedPro())tirarAnuncios();
+  }
   async function tirarAnuncios(){
     const AdMob=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.AdMob;
     try{if(AdMob)await AdMob.removeBanner()}catch(e){}
@@ -66,36 +85,46 @@
     document.body.style.paddingBottom='calc(66px + env(safe-area-inset-bottom,0px))';
     const b=document.getElementById('semAds');if(b)b.hidden=true;
   }
-  window.bncAdsAllowed=()=>!isPro();
-  function rerender(){const t=document.getElementById('tab-meus');if(t&&t.getAttribute('aria-selected')==='true')t.click()}
-  window.bncProCard=function(){
-    if(!(window.CdvPurchase&&storeOk))return '';
-    if(isPro())return `<div class="procard"><h3>Safrou sem anúncios</h3><p>Obrigado! Sua versão está sem anúncios.</p></div>`;
-    const preco=produto&&produto.pricing?produto.pricing.price:'';
-    return `<div class="procard"><h3>Remover anúncios</h3><p>Compra única${preco?' de <b>'+preco+'</b>':''}. Vale para sempre neste Apple ID ou conta Google, inclusive em outro celular.</p>
-      <div class="btnrow"><button class="btn" id="proBuy" ${produto&&produto.canPurchase!==false?'':'disabled'}>Comprar${preco?' por '+preco:''}</button><button class="btn ghost" id="proRestore">Restaurar compra</button></div>
-      <p class="muted" id="proMsg">${status}</p></div>`;
+  const errMsg=e=>{const m=String((e&&(e.message||e.errorMessage))||e||'');if((e&&(e.userCancelled||e.code==='1'||e.code===1))||/cancel/i.test(m))return 'cancel';return m||'erro desconhecido'};
+  window.SafBilling={
+    state:st,
+    isPro:cachedPro,
+    native,
+    info:()=>read(),
+    async init(){
+      if(!native()||!RC()||!/^appl_|^goog_/.test(RC_KEY)){st.ready=true;st.err=native()?'Assinaturas ainda não configuradas nesta versão.':'';window.dispatchEvent(new Event('saf-pro-change'));return}
+      try{
+        await RC().configure({apiKey:RC_KEY});
+        try{RC().addCustomerInfoUpdateListener(applyInfo)}catch(e){}
+        applyInfo(await RC().getCustomerInfo());
+        const o=await RC().getOfferings();const cur=(o&&o.current)||(o&&o.offerings&&o.offerings.current);
+        if(cur){st.packages={monthly:cur.monthly||null,annual:cur.annual||null};
+          if(!st.packages.monthly&&!st.packages.annual)(cur.availablePackages||[]).forEach(p=>{if(/month|mensal/i.test(p.identifier+p.packageType))st.packages.monthly=p;if(/annual|anual|year/i.test(p.identifier+p.packageType))st.packages.annual=p})}
+        st.available=!!(st.packages.monthly||st.packages.annual);
+      }catch(e){st.err=String(e&&e.message||e)}
+      st.ready=true;window.dispatchEvent(new Event('saf-pro-change'));
+    },
+    async buy(kind){
+      const pkg=st.packages[kind];if(!pkg)return {ok:false,msg:'Plano indisponível no momento. Tente mais tarde.'};
+      st.busy=true;
+      try{const r=await RC().purchasePackage({aPackage:pkg});applyInfo(r);st.busy=false;return {ok:cachedPro()}}
+      catch(e){st.busy=false;const m=errMsg(e);return {ok:false,cancel:m==='cancel',msg:m==='cancel'?'Assinatura cancelada.':'Não foi possível concluir: '+m}}
+    },
+    async restore(){
+      if(!RC())return {ok:false,msg:'Disponível apenas no app.'};
+      try{const r=await RC().restorePurchases();applyInfo(r);return {ok:cachedPro(),msg:cachedPro()?'Assinatura restaurada.':'Nenhuma assinatura ativa encontrada para esta conta.'}}
+      catch(e){return {ok:false,msg:'Não foi possível restaurar: '+errMsg(e)}}
+    },
+    async refresh(){if(native()&&RC()&&st.ready&&st.available){try{applyInfo(await RC().getCustomerInfo())}catch(e){}}},
+    manage(){const u=plat()==='android'?'https://play.google.com/store/account/subscriptions':'https://apps.apple.com/account/subscriptions';const Br=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Browser;if(Br)Br.open({url:u});else window.open(u,'_blank')},
+    tirarAnuncios
   };
-  window.bncProBind=function(){
-    const S=window.CdvPurchase&&window.CdvPurchase.store;if(!S)return;
-    const buy=document.getElementById('proBuy'),rest=document.getElementById('proRestore'),msg=document.getElementById('proMsg');
-    if(buy)buy.onclick=async()=>{const offer=produto&&produto.getOffer&&produto.getOffer();if(!offer){msg.textContent='Produto indisponível no momento. Tente mais tarde.';return}
-      buy.disabled=true;msg.textContent='Abrindo a loja…';const err=await offer.order();if(err){buy.disabled=false;msg.textContent=err.code===6777006||/cancel/i.test(err.message||'')?'Compra cancelada.':'Não foi possível concluir: '+(err.message||err.code)}};
-    if(rest)rest.onclick=async()=>{rest.disabled=true;msg.textContent='Verificando compras anteriores…';await S.restorePurchases();setTimeout(()=>{if(!isPro()){rest.disabled=false;msg.textContent='Nenhuma compra encontrada para esta conta.'}},4000)};
-  };
-  document.addEventListener('DOMContentLoaded',async()=>{
+  window.bncAdsAllowed=()=>!cachedPro();
+  document.addEventListener('DOMContentLoaded',()=>{
     const btn=document.getElementById('semAds');
-    if(btn)btn.onclick=()=>{const t=document.getElementById('tab-meus');if(t)t.click();window.scrollTo({top:0,behavior:'smooth'})};
-    if(isPro()){tirarAnuncios();}
-    const C=window.CdvPurchase;if(!C||!plat()||plat()==='web')return;
-    const {store,ProductType,Platform}=C;
-    const P=plat()==='ios'?Platform.APPLE_APPSTORE:Platform.GOOGLE_PLAY;const id=plat()==='ios'?PRODUTO.ios:PRODUTO.android;
-    store.register([{id,type:ProductType.NON_CONSUMABLE,platform:P}]);
-    store.when()
-      .productUpdated(p=>{if(p.id===id){produto=p;if(p.owned){setPro(true);tirarAnuncios()}rerender()}})
-      .approved(t=>t.finish())
-      .finished(t=>{if(t.products&&t.products.some(x=>x.id===id)){setPro(true);status='';tirarAnuncios();rerender()}});
-    try{await store.initialize([P]);storeOk=true;produto=store.get(id,P);if(produto&&produto.owned){setPro(true);tirarAnuncios()}
-      if(!isPro()&&btn)btn.hidden=false;rerender()}catch(e){console.warn('loja',e)}
+    if(btn)btn.onclick=()=>window.SAFPRO&&SAFPRO.paywall();
+    if(cachedPro())tirarAnuncios();else if(btn&&native())btn.hidden=false;
+    window.SafBilling.init();
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)window.SafBilling.refresh()});
   });
 })();

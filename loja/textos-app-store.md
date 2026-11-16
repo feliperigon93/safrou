@@ -6,13 +6,13 @@ Copie cada campo para a App Store Connect (Distribuição > App > Informações 
 **Subtítulo (até 30):** Defensivos, adubos e calda
 **Categoria principal:** Referência · **Secundária:** Negócios
 **Classificação etária:** 4+ (responder "Nenhum" em todas as perguntas)
-**Preço:** Gratuito, com compra opcional "Remover anúncios" (não consumível, ID app.safrou.semanuncios)
+**Preço:** Gratuito, com assinatura opcional **Safrou Pro** (renovação automática): mensal `app.safrou.pro.mensal` e anual `app.safrou.pro.anual`, com 7 dias grátis.
 
 **Texto promocional (até 170):**
 Defensivos e fertilizantes registrados no MAPA, genéricos, custo por hectare, calda e janela de plantio do ZARC. Funciona sem internet.
 
 **Palavras-chave (até 100, sem espaço depois da vírgula):**
-agrofit,defensivo,bula,agrotoxico,fertilizante,foliar,zarc,soja,milho,algodao,calda,agronomo
+agrofit,defensivo,bula,receituario,fertilizante,zarc,soja,milho,calda,agronomo,caderno de campo,delta t
 
 **Descrição:**
 Safrou reúne, num só app e sem precisar de internet, as bases oficiais do Ministério da Agricultura que o agrônomo e o produtor consultam no dia a dia.
@@ -44,24 +44,36 @@ PLANTIO (ZARC)
 MEUS PRODUTOS
 • Favoritos, estoque do barracão, lista de compras do programa e aviso quando um registro sai da base oficial.
 
-SEM ANÚNCIOS
-• O app é gratuito com um banner discreto. Se preferir, remova os anúncios com uma compra única, que vale para sempre na sua conta.
+SAFROU PRO (assinatura opcional, 7 dias grátis)
+• Recomendação técnica em PDF com seu nome, CREA e logo: produtos, doses, calda, ordem de mistura, carência e custo por hectare, pronta para enviar pelo WhatsApp.
+• Caderno de campo por talhão: histórico de aplicações, alerta de repetição de grupo de resistência e data liberada para colheita. Exporte em PDF.
+• Condições de pulverização: vento, Delta T, umidade e chuva das próximas 24 horas no seu local, com indicação de quando pode aplicar.
+• Sem anúncios.
+
+A consulta continua gratuita, com um banner discreto.
+
+Assinatura Safrou Pro: mensal ou anual, com renovação automática. O valor é cobrado na sua conta Apple ao confirmar a compra (ou ao fim do período grátis). A assinatura renova automaticamente, a menos que seja cancelada pelo menos 24 horas antes do fim do período. Gerencie ou cancele em Ajustes › [seu nome] › Assinaturas.
+Termos de uso: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Política de privacidade: https://feliperigon93.github.io/safrou/privacidade.html
 
 As bases são atualizadas todo mês. O app é uma ferramenta de consulta e não substitui a bula, o rótulo, as portarias do ZARC nem o receituário agronômico.
 
-**URL de suporte:** https://SEU-USUARIO.github.io/safrou/suporte.html
-**URL de marketing:** https://SEU-USUARIO.github.io/safrou/
-**URL da política de privacidade:** https://SEU-USUARIO.github.io/safrou/privacidade.html
+**URL de suporte:** https://feliperigon93.github.io/safrou/suporte.html
+**URL de marketing:** https://feliperigon93.github.io/safrou/
+**URL da política de privacidade:** https://feliperigon93.github.io/safrou/privacidade.html
 
 ## Privacidade do app (App Store Connect > Privacidade do app)
 - "Você ou seus parceiros coletam dados deste app?" → **Sim** (por causa do AdMob).
-- Tipos: **Identificadores > ID do dispositivo** e **Dados de uso > Dados de publicidade**; **Diagnóstico > Dados de falhas** e **Outros dados de diagnóstico** (o SDK do Google coleta).
-- Uso: **Publicidade de terceiros** (e Análise para diagnóstico).
-- Vinculado à identidade do usuário: **Não**.
-- Usado para rastreamento: **Sim** para o ID do dispositivo (só quando o usuário permite no aviso de rastreamento).
+- **Identificadores > ID do dispositivo** — Publicidade de terceiros · não vinculado · **usado para rastreamento: Sim** (só quando o usuário permite).
+- **Dados de uso > Dados de publicidade** — Publicidade de terceiros · não vinculado · rastreamento: Sim.
+- **Diagnóstico > Dados de falhas** e **Outros dados de diagnóstico** — Análise · não vinculado · rastreamento: Não (SDKs do Google e RevenueCat).
+- **Compras > Histórico de compras** — Funcionalidade do app · não vinculado · rastreamento: Não (RevenueCat confirma a assinatura).
+- **Identificadores > ID do usuário** — Funcionalidade do app · não vinculado · rastreamento: Não (identificador anônimo do RevenueCat).
+- **Localização > Localização aproximada** — Funcionalidade do app · não vinculado · rastreamento: Não (previsão do tempo; arredondada a ~1 km, não é guardada).
+- Nome, CREA, contato e logo do perfil profissional, recomendações e caderno de campo ficam **só no aparelho**: não entram no questionário, porque não são coletados pelo app.
 
 ## Informações para a revisão da Apple (Notas)
-O app não tem login. Todas as funções estão disponíveis ao abrir. Os dados vêm das bases públicas do Ministério da Agricultura do Brasil (AGROFIT, SIPEAGRO e ZARC), incluídas no app e atualizadas mensalmente a partir do site do desenvolvedor. Para testar: aba Defensivos → busque "azoxistrobina" → abra um produto → preencha o preço e a dose em "Custo da aplicação". Aba Plantio → Soja → MT → Sorriso. A compra "Remover anúncios" fica na aba Meus (e no botão "Remover anúncios" do topo), com o botão "Restaurar compra".
+O app não tem login. Todas as funções estão disponíveis ao abrir. Os dados vêm das bases públicas do Ministério da Agricultura do Brasil (AGROFIT, SIPEAGRO e ZARC), incluídas no app e atualizadas mensalmente a partir do site do desenvolvedor. Para testar: aba Defensivos → busque "azoxistrobina" → abra um produto → preencha o preço e a dose em "Custo da aplicação". Aba Plantio → Soja → MT → Sorriso. A assinatura Safrou Pro fica no botão "Seja Pro" do topo e nas seções Recomendações e Caderno da aba Meus, com "Restaurar assinatura". Os recursos Pro: recomendação técnica em PDF (aba Calda > "Gerar recomendação em PDF" ou Meus > Recomendações), caderno de campo (Meus > Caderno) e condições de pulverização (topo da aba Calda; pede permissão de localização). Para testar a compra use uma conta Sandbox.
 
 ## Conformidade de exportação
 O app só usa a criptografia padrão do sistema (HTTPS). Já está marcado no app (ITSAppUsesNonExemptEncryption = NÃO).

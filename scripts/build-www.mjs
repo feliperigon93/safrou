@@ -22,6 +22,7 @@ for(const [pkg,weights,fam] of fonts){for(const w of weights){
   else console.warn('fonte não encontrada',srcf)}}
 let html=fs.readFileSync(path.join(root,'www/index.src.html'),'utf8').replace('<!--FONTS-->',`<style>${css}</style>`);
 fs.writeFileSync(path.join(out,'index.html'),html);
-let js=fs.readFileSync(path.join(root,'www/app-native.js'),'utf8').replace('__REMOTE_DATA__',REMOTE).replace('__ADMOB_IOS_BANNER__',env.ADMOB_IOS_BANNER||'').replace('__ADMOB_ANDROID_BANNER__',env.ADMOB_ANDROID_BANNER||'');
+let js=fs.readFileSync(path.join(root,'www/app-native.js'),'utf8').replace('__REMOTE_DATA__',REMOTE).replace('__ADMOB_IOS_BANNER__',env.ADMOB_IOS_BANNER||'').replace('__ADMOB_ANDROID_BANNER__',env.ADMOB_ANDROID_BANNER||'').replace('__RC_IOS_KEY__',env.REVENUECAT_IOS_KEY||'');
 fs.writeFileSync(path.join(out,'app-native.js'),js);
+fs.copyFileSync(path.join(root,'www/pro.js'),path.join(out,'pro.js'));
 console.log('www-build pronto. Servidor de dados:',REMOTE||'(nenhum)','· manifest',manifest);
