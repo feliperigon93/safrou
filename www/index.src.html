@@ -1179,7 +1179,8 @@ function janelas(d){ // agrupa decêndios consecutivos com indicação
 }
 function renderPlantio(){
   const v=$('#view');
-  if(!ZARC){v.innerHTML=`<div class="empty"><h2>Janelas de plantio (ZARC)</h2><p>${zLoading?'Carregando o zoneamento… na primeira vez pode levar alguns segundos.':'O zoneamento agrícola de risco climático do MAPA (soja, milho e algodão) aparece aqui assim que for carregado.'}</p></div>${canAdmin&&assets&&db?zAdminBox():''}`;bindZAdmin();loadZarc();return}
+  if(window.SAFPRO&&SAFPRO.plantSub()==='sem'){SAFPRO.renderPlantab();return}
+  if(!ZARC){v.innerHTML=`${window.SAFPRO?SAFPRO.plantSeg():''}<div class="empty"><h2>Janelas de plantio (ZARC)</h2><p>${zLoading?'Carregando o zoneamento… na primeira vez pode levar alguns segundos.':'O zoneamento agrícola de risco climático do MAPA (soja, milho e algodão) aparece aqui assim que for carregado.'}</p></div>${canAdmin&&assets&&db?zAdminBox():''}`;window.SAFPRO&&SAFPRO.plantSegBind();bindZAdmin();loadZarc();return}
   const S=ZARC.S;
   const culturas=[...new Set(ZARC.R.map(r=>S[r[0]]))].sort((a,b)=>a.localeCompare(b,'pt'));
   const ufs=[...new Set(Object.values(ZARC.MUN).map(m=>m[0]))].sort();
@@ -1188,7 +1189,7 @@ function renderPlantio(){
   const opts=(arr,cur,lab)=>arr.map(x=>`<option value="${esc(x)}" ${String(x)===String(cur)?'selected':''}>${esc(lab?lab(x):x)}</option>`).join('');
   const solos=[...new Set(base.map(r=>r[2]))].sort((a,b)=>a-b),grupos=[...new Set(base.map(r=>r[1]))].sort((a,b)=>a-b),manejos=[...new Set(base.map(r=>r[3]))].sort(),nms=[...new Set(base.map(r=>r[4]))].sort();
   const sel=base.filter(r=>(!ZF.solo||r[2]==ZF.solo)&&(!ZF.grupo||r[1]==ZF.grupo)&&(!ZF.manejo||r[3]==ZF.manejo||!manejos.includes(+ZF.manejo))&&(!ZF.nm||r[4]==ZF.nm||!nms.includes(+ZF.nm)));
-  v.innerHTML=`
+  v.innerHTML=`${window.SAFPRO?SAFPRO.plantSeg():''}
   <div class="box calc"><h3>Janela de plantio · ZARC</h3>
     <div class="cgrid">
       <label for="z-cult">Cultura<select id="z-cult"><option value="">Escolha</option>${opts(culturas,ZF.cult)}</select></label>
@@ -1243,7 +1244,7 @@ function renderPlantio(){
   const on=(id,k,reset)=>{const el=$('#'+id);if(!el)return;el.addEventListener(el.tagName==='INPUT'?'change':'change',()=>{ZF[k]=el.value;(reset||[]).forEach(x=>ZF[x]='');save();renderPlantio()})};
   on('z-cult','cult',['solo','grupo','nm']);
   const cv=$('#z-cv');if(cv)cv.addEventListener('change',()=>{ZF.cultivar=cv.value;save();renderPlantio()});
-  bindPos();
+  bindPos();window.SAFPRO&&SAFPRO.plantSegBind();
   v.querySelectorAll('[data-gsel]').forEach(b=>b.onclick=()=>{ZF.grupo=b.dataset.gsel;save();renderPlantio();document.querySelector('.zleg')?.scrollIntoView({behavior:'smooth'})});on('z-uf','uf',['mun','solo','grupo','nm']);on('z-mun','mun',['solo','grupo','nm']);on('z-solo','solo');on('z-grupo','grupo');on('z-man','manejo');on('z-nm','nm');
   bindZAdmin();
 }
