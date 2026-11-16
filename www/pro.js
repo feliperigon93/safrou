@@ -698,3 +698,77 @@ SAFPRO.caldaBind=()=>{
   const r=v.querySelector('#k-rec');if(r)r.onclick=()=>SAFPRO.isPro()?REC.fromCalda():SAFPRO.paywall();
   const c=v.querySelector('#k-cad');if(c)c.onclick=()=>SAFPRO.isPro()?CAD.fromCalda():SAFPRO.paywall();
 };
+
+/* ---------- Plantabilidade: sementes por metro ↔ população por hectare (grátis) ---------- */
+const PLANTAB=(function(){
+  const X=SAFPRO,esc=X.esc,pnum=X.pnum,n2=X.n2;
+  const K='saf:plantab:v1';
+  const CULT={Soja:{esp:'50',germ:'85',pms:''},Milho:{esp:'50',germ:'95',pms:'',saco:'60000'},'Algodão':{esp:'90',germ:'80',pms:''},'Feijão':{esp:'45',germ:'85',pms:''},Trigo:{esp:'17',germ:'85',pms:''},Outra:{}};
+  let st=Object.assign({cult:'Soja',modo:'pop',esp:'50',pop:'',sem:'',germ:'85',perda:'',pms:'',saco:'',area:''},X.ls.get(K,{}));
+  const save=()=>X.ls.set(K,st);
+  let SUBP=X.ls.get('saf:plantsub','zarc');
+  function seg(){return `<div class="seg" role="group" aria-label="Seções do plantio"><button data-psub="zarc" aria-pressed="${SUBP==='zarc'}">Janela de plantio</button><button data-psub="sem" aria-pressed="${SUBP==='sem'}">Plantabilidade</button></div>`}
+  function segBind(){document.querySelectorAll('#view [data-psub]').forEach(b=>b.onclick=()=>{SUBP=b.dataset.psub;X.ls.set('saf:plantsub',SUBP);window.SAF.render();window.scrollTo(0,0)})}
+  function calc(){
+    const esp=pnum(st.esp);const fator=esp>0?1e6/esp:NaN; // metros lineares por hectare
+    const g=pnum(st.germ)>0?pnum(st.germ)/100:1,s=1-(pnum(st.perda)>0?pnum(st.perda)/100:0);const ef=g*s;
+    let pl_m,sem_m,pl_ha,sem_ha;
+    if(st.modo==='pop'){pl_ha=pnum(st.pop);pl_m=pl_ha/fator;sem_m=pl_m/ef;sem_ha=sem_m*fator}
+    else{sem_m=pnum(st.sem);sem_ha=sem_m*fator;pl_m=sem_m*ef;pl_ha=sem_ha*ef}
+    const dist=sem_m>0?100/sem_m:NaN;const pms=pnum(st.pms),saco=pnum(st.saco),area=pnum(st.area);
+    return {fator,ef,pl_m,sem_m,pl_ha,sem_ha,dist,kg:pms>0?sem_ha*pms/1e6:NaN,sacos:saco>0?sem_ha/saco:NaN,area};
+  }
+  const ok=n=>isFinite(n)&&n>0;
+  function resultado(){
+    const r=calc();if(!ok(r.fator))return '<p class="muted" style="margin:0">Informe o espaçamento entre linhas.</p>';
+    const temBase=st.modo==='pop'?ok(r.pl_ha):ok(r.sem_m);
+    const kp=`<div class="kpis"><div><span>Metros de linha por ha</span><b>${n2(r.fator,0)} m</b><small>10.000 ÷ ${esc(n2(pnum(st.esp)/100,2))} m</small></div></div>`;
+    if(!temBase)return kp+`<p class="muted" style="margin:0">${st.modo==='pop'?'Digite a população desejada (plantas por hectare).':'Digite quantas sementes por metro a plantadeira está soltando.'}</p>`;
+    const perdasTxt=r.ef<1?`considerando ${n2(r.ef*100,0)}% de aproveitamento (germinação${pnum(st.perda)>0?' e perdas':''})`:'sem descontar germinação';
+    const principal=st.modo==='pop'
+      ?`<div class="semaf s0" style="grid-template-columns:1fr"><div><span class="muted">Regule a plantadeira para</span><b style="font-size:30px">${n2(r.sem_m,1)} sementes por metro</b><span class="muted">${perdasTxt} · ${n2(r.pl_m,1)} plantas por metro no estande</span></div></div>`
+      :`<div class="semaf s0" style="grid-template-columns:1fr"><div><span class="muted">População esperada</span><b style="font-size:30px">${n2(r.pl_ha,0)} plantas/ha</b><span class="muted">${perdasTxt} · ${n2(r.pl_m,1)} plantas por metro</span></div></div>`;
+    const area=ok(r.area);
+    return kp+principal+`<div class="cmet" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+      <div><span>Sementes por ha</span><b>${n2(r.sem_ha,0)}</b></div>
+      <div><span>Distância entre sementes</span><b>${n2(r.dist,1)} cm</b></div>
+      ${ok(r.kg)?`<div><span>Semente por ha</span><b>${n2(r.kg,1)} kg</b></div>`:''}
+      ${ok(r.sacos)?`<div><span>Sacos por ha</span><b>${n2(r.sacos,2)}</b></div>`:''}
+      ${area?`<div><span>Sementes na área</span><b>${n2(r.sem_ha*r.area,0)}</b></div>`:''}
+      ${area&&ok(r.kg)?`<div><span>Semente na área</span><b>${n2(r.kg*r.area,0)} kg</b></div>`:''}
+      ${area&&ok(r.sacos)?`<div><span>Sacos na área</span><b>${n2(Math.ceil(r.sacos*r.area),0)}</b></div>`:''}
+    </div>
+    <p class="note" style="margin:0">Na conferência a campo: em <b>10 metros</b> de linha você deve contar cerca de <b>${n2(r.sem_m*10,0)} sementes</b> caindo${r.ef<1?` e, depois da emergência, <b>${n2(r.pl_m*10,0)} plantas</b>`:''}.</p>`;
+  }
+  function render(){
+    const v=document.getElementById('view');
+    const chip=(k,val,lab)=>`<button class="chip" data-set="${k}" data-val="${esc(val)}" aria-pressed="${String(st[k])===String(val)}">${esc(lab||val)}</button>`;
+    v.innerHTML=`${seg()}
+    <div class="box calc"><h3>Plantabilidade · sementes por metro</h3>
+      <div class="filters">${Object.keys(CULT).map(c=>chip('cult',c)).join('')}</div>
+      <div class="ffield">Espaçamento entre linhas (cm)<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="pt-esp" inputmode="decimal" value="${esc(st.esp)}" style="max-width:110px">${['45','50','76','90'].map(e=>chip('esp',e,e+' cm')).join('')}</div></div>
+      <div class="seg" role="group" aria-label="Tipo de cálculo"><button data-modo="pop" aria-pressed="${st.modo==='pop'}">Tenho a população</button><button data-modo="sem" aria-pressed="${st.modo==='sem'}">Tenho sementes/metro</button></div>
+      <div class="fgrid">
+        ${st.modo==='pop'?`<label class="ffield full">População desejada (plantas/ha)<input id="pt-pop" inputmode="numeric" placeholder="Ex.: 280.000" value="${esc(st.pop)}"></label>`
+          :`<label class="ffield full">Sementes por metro na plantadeira<input id="pt-sem" inputmode="decimal" placeholder="Ex.: 14" value="${esc(st.sem)}"></label>`}
+        <label class="ffield">Germinação (%)<input id="pt-germ" inputmode="decimal" placeholder="Ex.: 85" value="${esc(st.germ)}"></label>
+        <label class="ffield">Perdas no campo (%)<input id="pt-perda" inputmode="decimal" placeholder="opcional" value="${esc(st.perda)}"></label>
+        <label class="ffield">PMS (g / 1000 sementes)<input id="pt-pms" inputmode="decimal" placeholder="opcional" value="${esc(st.pms)}"></label>
+        <label class="ffield">Sementes por saco<input id="pt-saco" inputmode="numeric" placeholder="${st.cult==='Milho'?'Ex.: 60.000':'opcional'}" value="${esc(st.saco)}"></label>
+        <label class="ffield full">Área a plantar (ha)<input id="pt-area" inputmode="decimal" placeholder="opcional" value="${esc(st.area)}"></label>
+      </div>
+      <div id="pt-res" style="display:grid;gap:10px">${resultado()}</div>
+      <p class="muted" style="margin:0">Fórmula: metros de linha por hectare = 10.000 ÷ espaçamento (m). Com 50 cm são 20.000 m; com 45 cm, 22.222 m. Plantas/ha = plantas por metro × metros por hectare. A germinação vem do boletim do lote; as perdas cobrem falhas de emergência e de plantio.</p>
+    </div>`;
+    segBind();
+    const upd=()=>{save();const r=document.getElementById('pt-res');if(r)r.innerHTML=resultado()};
+    [['pt-esp','esp'],['pt-pop','pop'],['pt-sem','sem'],['pt-germ','germ'],['pt-perda','perda'],['pt-pms','pms'],['pt-saco','saco'],['pt-area','area']].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.oninput=()=>{st[k]=el.value;upd();if(k==='esp')v.querySelectorAll('[data-set="esp"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.val===el.value))}});
+    v.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>{const k=b.dataset.set,val=b.dataset.val;st[k]=val;if(k==='cult'){const c=CULT[val]||{};['esp','germ','pms','saco'].forEach(f=>{if(c[f]!==undefined)st[f]=c[f]})}save();render()});
+    v.querySelectorAll('[data-modo]').forEach(b=>b.onclick=()=>{st.modo=b.dataset.modo;save();render()});
+  }
+  return {seg,segBind,render,sub:()=>SUBP,calc};
+})();
+SAFPRO.plantSeg=()=>PLANTAB.seg();
+SAFPRO.plantSegBind=()=>PLANTAB.segBind();
+SAFPRO.plantSub=()=>PLANTAB.sub();
+SAFPRO.renderPlantab=()=>PLANTAB.render();
