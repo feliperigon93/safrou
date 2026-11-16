@@ -13,11 +13,12 @@ jobs:
     env:
       ADMOB_IOS_APP_ID: ${{ secrets.ADMOB_IOS_APP_ID }}
       ADMOB_IOS_BANNER: ${{ secrets.ADMOB_IOS_BANNER }}
+      REVENUECAT_IOS_KEY: ${{ secrets.REVENUECAT_IOS_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm install --no-audit --no-fund
+      - run: npm install --no-audit --no-fund --legacy-peer-deps.
       - name: Montar o app web
         run: node scripts/build-www.mjs
       - name: Criar projeto iOS
