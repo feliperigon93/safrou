@@ -5,10 +5,10 @@ on:
       versao:
         description: 'Versão que aparece na loja (ex.: 1.0.0)'
         required: true
-        default: '1.0.0'
+        default: '1.0'
 jobs:
   ios:
-    runs-on: macos-15-intel
+    runs-on: macos-15
     timeout-minutes: 60
     env:
       ADMOB_IOS_APP_ID: ${{ secrets.ADMOB_IOS_APP_ID }}
@@ -16,9 +16,12 @@ jobs:
       REVENUECAT_IOS_KEY: ${{ secrets.REVENUECAT_IOS_KEY }}
     steps:
       - uses: actions/checkout@v4
+      - name: Usar Xcode 26 (exigido pela Apple)
+        uses: maxim-lobanov/setup-xcode@v1
+        with: { xcode-version: latest-stable }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm install --no-audit --no-fund --legacy-peer-deps.
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
       - name: Montar o app web
         run: node scripts/build-www.mjs
       - name: Criar projeto iOS
@@ -44,7 +47,7 @@ jobs:
             -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
             -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
             DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} CODE_SIGN_STYLE=Automatic \
-            PRODUCT_BUNDLE_IDENTIFIER=app.safrou TARGETED_DEVICE_FAMILY=1 CODE_SIGNING_ALLOWED=NO archive
+            TARGETED_DEVICE_FAMILY=1 CODE_SIGNING_ALLOWED=NO archive
       - name: Enviar para a App Store Connect (TestFlight)
         run: |
           cat > ExportOptions.plist <<PLIST
