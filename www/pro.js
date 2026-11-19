@@ -99,6 +99,7 @@ const SAFPRO=(function(){
   const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   const isPro=()=>!!(B()&&B().isPro());
   const native=()=>!!(B()&&B().native());
+  const ON=()=>!!(B()&&(!B().enabled||B().enabled()));
   const hoje=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
   const fmtD=iso=>{if(!iso)return '';const [y,m,d]=String(iso).slice(0,10).split('-');return d&&m&&y?`${d}/${m}/${y}`:iso};
   const addDias=(iso,n)=>{const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
@@ -243,7 +244,7 @@ const SAFPRO=(function(){
   /* ---------- abas da área "Meus" ---------- */
   let SUB=ls.get('saf:meussub','fav');
   const SUBS=[['fav','Favoritos'],['rec','Recomendações'],['cad','Caderno']];
-  function meusSeg(){return `<div class="seg" role="group" aria-label="Seções">${SUBS.map(([k,t])=>`<button data-sub="${k}" aria-pressed="${SUB===k}">${t}${k!=='fav'&&!isPro()?' '+LOCK:''}</button>`).join('')}</div>
+  function meusSeg(){if(!ON())return '';return `<div class="seg" role="group" aria-label="Seções">${SUBS.map(([k,t])=>`<button data-sub="${k}" aria-pressed="${SUB===k}">${t}${k!=='fav'&&!isPro()?' '+LOCK:''}</button>`).join('')}</div>
     ${!isPro()&&SUB==='fav'&&native()?`<button class="btn pro" data-paywall style="justify-self:start">Seja Pro · sem anúncios e mais ferramentas</button>`:''}`}
   function meusSegBind(){const v=$('#view');v.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{SUB=b.dataset.sub;ls.set('saf:meussub',SUB);S().render()});bindTeaser(v)}
   function renderMeusSub(){
@@ -291,7 +292,7 @@ const SAFPRO=(function(){
   }
 
   const api={isPro,paywall,teaser,bindTeaser,openSheet,closeSheet,shareFile,slug,ls,uid,hoje,fmtD,addDias,perfil,perfilSheet,pickerHtml,pickerBind,moasOf,esc,norm,pnum,n2,brl,LOCK,native,
-    meusSub:()=>SUB,setSub:s=>{SUB=s;ls.set('saf:meussub',s)},meusSeg,meusSegBind,renderMeusSub};
+    proOn:ON,meusSub:()=>ON()?SUB:'fav',setSub:s=>{SUB=s;ls.set('saf:meussub',s)},meusSeg,meusSegBind,renderMeusSub};
   return api;
 })();
 window.SAFPRO=SAFPRO;
@@ -691,8 +692,8 @@ const CLIMA=(function(){
 })();
 
 /* ganchos da aba Calda */
-SAFPRO.caldaTop=()=>CLIMA.card();
-SAFPRO.caldaRecBtn=()=>`<div class="btnrow"><button class="btn ${SAFPRO.isPro()?'':'pro'}" id="k-rec">${SAFPRO.isPro()?'':SAFPRO.LOCK+' '}Gerar recomendação em PDF</button><button class="btn ghost" id="k-cad">${SAFPRO.isPro()?'':SAFPRO.LOCK+' '}Registrar no caderno de campo</button></div>`;
+SAFPRO.caldaTop=()=>SAFPRO.proOn()?CLIMA.card():'';
+SAFPRO.caldaRecBtn=()=>!SAFPRO.proOn()?'':`<div class="btnrow"><button class="btn ${SAFPRO.isPro()?'':'pro'}" id="k-rec">${SAFPRO.isPro()?'':SAFPRO.LOCK+' '}Gerar recomendação em PDF</button><button class="btn ghost" id="k-cad">${SAFPRO.isPro()?'':SAFPRO.LOCK+' '}Registrar no caderno de campo</button></div>`;
 SAFPRO.caldaBind=()=>{
   const v=document.getElementById('view');CLIMA.bind(v);
   const r=v.querySelector('#k-rec');if(r)r.onclick=()=>SAFPRO.isPro()?REC.fromCalda():SAFPRO.paywall();

@@ -90,6 +90,8 @@
     state:st,
     isPro:cachedPro,
     native,
+    // Pro só aparece quando a assinatura está configurada (chave do RevenueCat no build)
+    enabled:()=>!native()||/^appl_|^goog_/.test(RC_KEY),
     info:()=>read(),
     async init(){
       if(!native()||!RC()||!/^appl_|^goog_/.test(RC_KEY)){st.ready=true;st.err=native()?'Assinaturas ainda não configuradas nesta versão.':'';window.dispatchEvent(new Event('saf-pro-change'));return}
@@ -123,7 +125,7 @@
   document.addEventListener('DOMContentLoaded',()=>{
     const btn=document.getElementById('semAds');
     if(btn)btn.onclick=()=>window.SAFPRO&&SAFPRO.paywall();
-    if(cachedPro())tirarAnuncios();else if(btn&&native())btn.hidden=false;
+    if(cachedPro())tirarAnuncios();else if(btn&&native()&&window.SafBilling.enabled())btn.hidden=false;
     window.SafBilling.init();
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)window.SafBilling.refresh()});
   });
