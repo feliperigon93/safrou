@@ -155,6 +155,7 @@ ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--ink)}
 .combo-list{touch-action:pan-y;overscroll-behavior:contain;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--surface,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.14);text-transform:none;letter-spacing:0}
 .combo-opt{padding:11px 12px;font-size:15px;font-weight:500;color:var(--ink);border-bottom:1px solid var(--line);cursor:pointer}
 .combo-opt:last-child{border-bottom:0}.combo-opt.on,.combo-opt:active{background:var(--surface-2)}
+.combo-opt small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:2px}
 .combo-more{padding:10px 12px;font-size:13px;color:var(--muted);font-weight:400}
 .cgrid input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:16px;color:var(--ink);text-transform:none;letter-spacing:0;font-weight:400}
 .cgrid .gin input{border:0;background:none}
@@ -1116,17 +1117,18 @@ function bindPos(){
 const CHEV='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const cLab=t=>String(t||'').replace(/^"+|"+$/g,'').trim();
 function comboHtml(id,val,ph,dis){return `<div class="combo"><input id="${id}" value="${esc(cLab(val))}" placeholder="${esc(ph)}" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="${id}-l"${dis?' disabled':''}><button type="button" class="combo-x" id="${id}-x" aria-label="Limpar"${val?'':' hidden'}>×</button><button type="button" class="combo-btn" id="${id}-b" aria-label="Ver todas as opções"${dis?' disabled':''}>${CHEV}</button><div class="combo-list" id="${id}-l" role="listbox" hidden></div></div>`}
-function bindCombo(id,getList,onPick,onClear){
+function bindCombo(id,getList,onPick,onClear,O={}){
+  const LB=n=>O.label?O.label(n):cLab(n),SB=n=>O.sub?O.sub(n):'',EX=n=>O.extra?O.extra(n):'';
   const inp=$('#'+id),list=$('#'+id+'-l'),btn=$('#'+id+'-b'),clr=$('#'+id+'-x');if(!inp||!list)return;
   const key=t=>norm(t).replace(/[\s\-]+/g,'');
   let open=false,items=[],act=-1;
   const close=()=>{open=false;list.hidden=true;inp.setAttribute('aria-expanded','false');act=-1};
-  const pick=n=>{close();inp.value=cLab(n);onPick(n)};
+  const pick=n=>{close();inp.value=LB(n);onPick(n)};
   const show=all=>{
-    const L=getList().slice().sort((a,b)=>cLab(a).localeCompare(cLab(b),'pt',{numeric:true})),q=key(inp.value);items=all||!q?L:L.filter(n=>key(cLab(n)).includes(q));
-    if(q&&!all)items=items.slice().sort((a,b)=>(key(cLab(a)).startsWith(q)?0:1)-(key(cLab(b)).startsWith(q)?0:1));
+    const L=getList().slice().sort((a,b)=>LB(a).localeCompare(LB(b),'pt',{numeric:true})),q=key(inp.value);items=all||!q?L:L.filter(n=>key(LB(n)+' '+n+' '+EX(n)).includes(q));
+    if(q&&!all)items=items.slice().sort((a,b)=>(key(LB(a)).startsWith(q)||key(a).startsWith(q)?0:1)-(key(LB(b)).startsWith(q)||key(b).startsWith(q)?0:1));
     act=-1;
-    list.innerHTML=items.length?items.slice(0,400).map((n,i)=>`<div class="combo-opt" role="option" data-i="${i}">${esc(cLab(n))}</div>`).join('')+(items.length>400?`<div class="combo-more">Digite para ver as outras ${fmtN(items.length-400)}</div>`:''):`<div class="combo-more">Nada encontrado com “${esc(inp.value)}”</div>`;
+    list.innerHTML=items.length?items.slice(0,400).map((n,i)=>`<div class="combo-opt" role="option" data-i="${i}"><span>${esc(LB(n))}</span>${SB(n)?`<small>${esc(SB(n))}</small>`:''}</div>`).join('')+(items.length>400?`<div class="combo-more">Digite para ver as outras ${fmtN(items.length-400)}</div>`:''):`<div class="combo-more">Nada encontrado com “${esc(inp.value)}”</div>`;
     list.hidden=false;open=true;inp.setAttribute('aria-expanded','true');list.scrollTop=0;
   };
   // toque curto escolhe; arrastar rola a lista sem escolher
@@ -1150,26 +1152,48 @@ function bindCombo(id,getList,onPick,onClear){
 }
 function bindCultCombo(){
   const save=()=>lsSet('zarcf:v1',ZF);
-  bindCombo('z-cv',()=>CV_NOMES,n=>{ZF.cultivar=n;save();renderPlantio()},()=>{if(ZF.cultivar){ZF.cultivar='';save();renderPlantio()}});
+  bindCombo('z-cv',()=>CV_NOMES,n=>{ZF.cultivar=n;save();renderPlantio()},()=>{if(ZF.cultivar){ZF.cultivar='';save();renderPlantio()}},{label:cvLabel,sub:n=>CV_EMP[n]?marcaDe(CV_EMP[n]).nome:'',extra:n=>CV_EMP[n]?marcaDe(CV_EMP[n]).busca:''});
 }
+/* marcas das obtentoras: a portaria traz o código de registro; aqui mostramos a marca e deixamos buscar por ela */
+const MARCAS=[
+  [/^GDM/,'Brasmax · Don Mario · Nidera','gdm brasmax bmx don mario dm nidera ns'],
+  [/^TMG/,'TMG','tmg tropical','TMG'],
+  [/^D&PL/,'Monsoy (Bayer)','monsoy bayer dpl'],
+  [/^SYNGENTA/,'Syngenta','syngenta nk'],
+  [/^BASF/,'BASF','basf credenz'],
+  [/^CORTEVA/,'Pioneer (Corteva)','pioneer corteva'],
+  [/^CENTRO NACIONAL DE PESQUISA DE SOJA/,'Embrapa','embrapa brs'],
+  [/^FTS/,'FTS Sementes','fts'],
+  [/^INOVA/,'Inova','inova'],
+  [/^M\.S\. TECH/,'MS Technologies','ms technologies'],
+  [/^LIMAGRAIN/,'LG Sementes (Limagrain)','lg limagrain'],
+  [/^SEEDCORP/,'Seedcorp|HO','seedcorp ho'],
+  [/^INSTITUTO MATO-GROSSENSE/,'IMAmt','ima imamt'],
+  [/^GENEZE/,'Geneze','geneze'],
+];
+const titleEmp=e=>String(e||'').toLowerCase().replace(/\b(ltda|s\/?a|s\.a\.?|epp|me)\b\.?/g,'').replace(/\s+/g,' ').trim().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+function marcaDe(emp){const m=MARCAS.find(x=>x[0].test(String(emp||'').toUpperCase()));return m?{nome:m[1],busca:m[2],sigla:m[3]||''}:{nome:titleEmp(emp),busca:norm(emp),sigla:''}}
+let CV_EMP={};
+function cvLabel(n){const e=CV_EMP[n];if(!e)return cLab(n);const m=marcaDe(e);return m.sigla&&!norm(n).replace(/\s/g,'').startsWith(norm(m.sigla))?m.sigla+' '+n:cLab(n)}
 let CV_NOMES=[],MUN_LIST=[];
 function cultBox(){
   if(!CULT){loadCult();return '<p class="muted" style="margin:0">Carregando a lista de cultivares indicadas…</p>'}
   const uf=ZF.uf;const C=CULT.C,E=CULT.E;
   const noUF=uf?CULT.L.filter(l=>l[0]===uf):[];
   const nomes=[...new Set((uf?noUF:CULT.L).map(l=>l[4]))].map(i=>C[i]).sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));
+  if(!Object.keys(CV_EMP).length)CULT.L.forEach(l=>{CV_EMP[C[l[4]]]=E[l[3]]});
   CV_NOMES=nomes;const q=(ZF.cultivar||'').trim();let res='';
   if(q){const ci=C.findIndex(c=>norm(c)===norm(q));
     if(ci<0)res=`<p class="note">Não encontrei “${esc(q)}” entre as cultivares indicadas nas portarias de soja. Confira a grafia (ex.: com ou sem espaço antes de IPRO/I2X).</p>`;
     else{const rows=CULT.L.filter(l=>l[4]===ci);const emp=E[rows[0][3]];
-      if(!uf){const ufs=[...new Set(rows.map(l=>l[0]))].sort();res=`<p style="margin:0"><b>${esc(C[ci])}</b> <span class="muted">· ${esc(emp)}</span><br>Indicada em ${ufs.length} estado${ufs.length>1?'s':''}: ${esc(ufs.join(', '))}. Escolha o estado para ver o grupo.</p>`}
+      if(!uf){const ufs=[...new Set(rows.map(l=>l[0]))].sort();res=`<p style="margin:0"><b>${esc(cvLabel(C[ci]))}</b> <span class="muted">· ${esc(marcaDe(emp).nome)}</span><br>Indicada em ${ufs.length} estado${ufs.length>1?'s':''}: ${esc(ufs.join(', '))}. Escolha o estado para ver o grupo.</p>`}
       else{const r=rows.filter(l=>l[0]===uf);
         if(!r.length)res=`<p class="note"><b>${esc(C[ci])}</b> não consta como indicada na portaria de soja de ${esc(uf)} (Portaria nº ${CULT.portarias[uf]}/2026). Fora da lista, a lavoura não tem cobertura do ZARC para seguro e Proagro.</p>`;
         else{const gs=[...new Set(r.map(l=>l[2]))];
-          res=`<p style="margin:0"><b>${esc(C[ci])}</b> <span class="muted">· ${esc(emp)}</span></p><ul class="steps" style="margin:0">${r.map(l=>`<li>Macrorregião ${l[1]}: <b>Grupo ${'I'.repeat(l[2])}</b></li>`).join('')}</ul>
+          res=`<p style="margin:0"><b>${esc(cvLabel(C[ci]))}</b> <span class="muted">· ${esc(marcaDe(emp).nome)}</span></p><ul class="steps" style="margin:0">${r.map(l=>`<li>Macrorregião ${l[1]}: <b>Grupo ${'I'.repeat(l[2])}</b></li>`).join('')}</ul>
           <div class="btnrow">${gs.map(g=>`<button class="btn ghost" data-gsel="${19+g}">Ver janela do Grupo ${'I'.repeat(g)}</button>`).join('')}</div>`}}
       res+=posForCultivar(C[ci],emp)}}
-  return `<div class="cgrid"><label for="z-cv">Cultivar (opcional)${comboHtml('z-cv',q,'Digite ou toque na seta')}</label></div>${res}
+  return `<div class="cgrid"><label for="z-cv">Cultivar (opcional)${comboHtml('z-cv',q?cvLabel(q):'','Nome, número ou marca (ex.: BMX, TMG)')}</label></div>${res}
     <p class="muted" style="margin:0">${uf?`${fmtN(nomes.length)} cultivares indicadas em ${esc(uf)}`:`${fmtN(C.length)} cultivares nas portarias`} · lista oficial das portarias de soja do ZARC, safra ${esc(CULT.safra)}.</p>`;
 }
 let ZARC=null,zmeta=null,zLoading=false;
