@@ -8,7 +8,7 @@ on:
         default: '1.0.0'
 jobs:
   ios:
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 60
     env:
       ADMOB_IOS_APP_ID: ${{ secrets.ADMOB_IOS_APP_ID }}
