@@ -152,7 +152,7 @@ ol.steps{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--ink)}
 .cgrid .combo input,.combo input{padding-right:78px}
 .combo-btn,.combo-x{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;width:38px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;padding:0}
 .combo-btn{right:2px;border-left:1px solid var(--line)}.combo-x{right:40px}
-.combo-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--surface,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.14);text-transform:none;letter-spacing:0}
+.combo-list{touch-action:pan-y;overscroll-behavior:contain;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--surface,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.14);text-transform:none;letter-spacing:0}
 .combo-opt{padding:11px 12px;font-size:15px;font-weight:500;color:var(--ink);border-bottom:1px solid var(--line);cursor:pointer}
 .combo-opt:last-child{border-bottom:0}.combo-opt.on,.combo-opt:active{background:var(--surface-2)}
 .combo-more{padding:10px 12px;font-size:13px;color:var(--muted);font-weight:400}
@@ -1129,10 +1129,17 @@ function bindCombo(id,getList,onPick,onClear){
     list.innerHTML=items.length?items.slice(0,400).map((n,i)=>`<div class="combo-opt" role="option" data-i="${i}">${esc(cLab(n))}</div>`).join('')+(items.length>400?`<div class="combo-more">Digite para ver as outras ${fmtN(items.length-400)}</div>`:''):`<div class="combo-more">Nada encontrado com “${esc(inp.value)}”</div>`;
     list.hidden=false;open=true;inp.setAttribute('aria-expanded','true');list.scrollTop=0;
   };
-  list.addEventListener('pointerdown',e=>{const o=e.target.closest('.combo-opt');if(!o)return;e.preventDefault();pick(items[+o.dataset.i])});
+  // toque curto escolhe; arrastar rola a lista sem escolher
+  let inList=false,sy=0,moved=false;
+  list.addEventListener('pointerdown',e=>{inList=true;moved=false;sy=e.clientY});
+  list.addEventListener('pointermove',e=>{if(Math.abs(e.clientY-sy)>8)moved=true});
+  list.addEventListener('scroll',()=>{moved=true},{passive:true});
+  list.addEventListener('pointercancel',()=>{moved=true;setTimeout(()=>{inList=false},300)});
+  list.addEventListener('pointerup',e=>{const o=e.target.closest('.combo-opt');const ok=o&&!moved&&Math.abs(e.clientY-sy)<=8;setTimeout(()=>{inList=false},300);if(ok){e.preventDefault();pick(items[+o.dataset.i])}});
   inp.addEventListener('input',()=>{show(false);if(clr)clr.hidden=!inp.value});
   inp.addEventListener('focus',()=>{if(inp.value)show(false)});
-  inp.addEventListener('blur',()=>setTimeout(()=>{if(open)close();if(!inp.value)onClear()},150));
+  inp.addEventListener('blur',()=>setTimeout(()=>{if(inList)return;if(open)close();if(!inp.value)onClear()},200));
+  const outside=e=>{if(open&&!e.target.closest('.combo'))close()};(window.__comboOut=window.__comboOut||{});if(window.__comboOut[id])document.removeEventListener('pointerdown',window.__comboOut[id]);window.__comboOut[id]=outside;document.addEventListener('pointerdown',outside);
   inp.addEventListener('keydown',e=>{
     const opts=list.querySelectorAll('.combo-opt');
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){if(!open)show(false);e.preventDefault();act=Math.max(0,Math.min(opts.length-1,act+(e.key==='ArrowDown'?1:-1)));opts.forEach((o,i)=>o.classList.toggle('on',i===act));opts[act]?.scrollIntoView({block:'nearest'})}
